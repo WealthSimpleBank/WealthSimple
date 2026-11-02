@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="{{ csrf_token }}">
+  <title>Crédits — WealthSimpleBank admin</title>
+  <style>
+    * { box-sizing:border-box; }
+    body { margin:0; padding:clamp(18px,4vw,30px) clamp(10px,3vw,16px); background:#0b1020; color:#f1f4ff; font:15px/1.5 system-ui,sans-serif; }
+    main { width:min(1050px,100%); margin:auto; }
+    a { color:#a9b7ff; }
+    h1 { margin:8px 0; }
+    .note { color:#bbc4da; }
+    .warning { padding:14px 16px; margin:18px 0; border:1px solid #84532b; border-radius:12px; background:#3c2819; color:#ffe0b3; }
+    .panel { padding:18px; border:1px solid #303953; border-radius:14px; background:#151c31; margin:18px 0; }
+    form { display:flex; align-items:end; gap:10px; flex-wrap:wrap; }
+    form label { flex:1 1 100%; }
+    input,button { padding:10px 12px; border:0; border-radius:8px; font:inherit; }
+    input { background:#0b1020; color:#fff; border:1px solid #465171; }
+    button { background:#758bff; color:#fff; font-weight:700; cursor:pointer; }
+    button:disabled { opacity:.6; cursor:wait; }
+    .code { margin-top:14px; font:800 1.3rem ui-monospace,monospace; letter-spacing:.12em; overflow-wrap:anywhere; }
+    .message { color:#72dfa9; min-height:22px; }
+    .error { color:#ff8792; }
+    .table-wrap { overflow-x:auto; border:1px solid #303953; border-radius:12px; }
+    table { width:100%; border-collapse:collapse; min-width:620px; background:#151c31; }
+    th,td { padding:12px; border-bottom:1px solid #303953; text-align:left; }
+    th { color:#bbc4da; font-size:.8rem; text-transform:uppercase; }
+    .badge { font-weight:700; color:#ffd478; }
+    .used { color:#72dfa9; }
+    @media (max-width:520px) {
+      .panel { padding:14px; }
+      form input { flex:1 1 100%; width:100%; }
+      form button { flex:1 1 100%; min-height:44px; }
+      th,td { padding:10px 8px; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <a href="/admin">← Retour au panneau admin</a>
+  <h1>Codes de crédit</h1>
+  <p class="note">Crée un code à usage unique pour ajouter un montant au solde du client.</p>
+
+  <section class="panel">
+    <h2>Générer un code</h2>
+    <form id="create-form">
+      <label for="credits">Montant en EUR (maximum 100 000)</label>
+      <input id="credits" name="credits" type="number" min="0.01" max="100000" step="0.01" value="1000" required>
+      <button id="create-button" type="submit">Générer le code</button>
+    </form>
+    <p id="message" class="message" role="status"></p>
+    <div id="generated-code" class="code" aria-live="polite"></div>
+    <button id="copy-button" type="button" hidden>Copier le code</button>
+  </section>
+
+  <h2>Codes de test créés</h2>
+  {% if codes %}
+  <div class="table-wrap"><table>
+    <thead><tr><th>Créé le</th><th>Crédits</th><th>Créé par</th><th>Statut</th><th>Utilisé par</th></tr></thead>
+    <tbody>
+      {% for item in codes %}
+      <tr>
+        <td>{{ item.created_at }}</td>
+        <td>{{ "%.2f"|format(item.credits|float) }} EUR</td>
+        <td>{{ item.creator_email }}</td>
+        {% if item.redeemed_by %}
+          <td class="badge used">Utilisé le {{ item.redeemed_at }}</td>
+          <td>{{ item.redeemer_email }}</td>
+        {% else %}
+          <td class="badge">Disponible</td><td>—</td>
+        {% endif %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table></div>
+  {% else %}
+  <p class="note">Aucun code n’a encore été généré.</p>
+  {% endif %}
+</main>
+<footer style="margin:24px auto 12px;text-align:center;color:#bbc4da;font-size:12px">© 2008 WealthSimpleBank — Tous droits réservés.</footer>
+<script>
+  const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+  const form = document.getElementById('create-form');
+  const button = document.getElementById('create-button');
+  const message = document.getElementById('message');
+  const codeElement = document.getElementById('generated-code');
+  const copyButton = document.getElementById('copy-button');
+  let currentCode = '';
+
+  form.addEventListener('submit', async event => {
+    event.preventDefault();
+    button.disabled = true;
+    message.className = 'message';
+    message.textContent = '';
+    codeElement.textContent = '';
+    copyButton.hidden = true;
+    currentCode = '';
+    try {
+      const response = await fetch('/api/admin/demo-investment-codes', {
+        method:'POST',
+        headers:{'Content-Type':'application/json','X-CSRF-Token':csrfToken},
+        body:JSON.stringify({credits:document.getElementById('credits').value})
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) throw new Error(result.message || 'Création impossible.');
+      currentCode = result.code;
+      codeElement.textContent = currentCode;
+      message.textContent = `${result.credits.toLocaleString('fr-FR')} EUR. Copiez ce code maintenant ; il ne sera plus affiché.`;
+      copyButton.hidden = false;
+    } catch (error) {
+      message.className = 'message error';
+      message.textContent = error.message;
+    } finally {
+      button.disabled = false;
+    }
+  });
+
+  copyButton.addEventListener('click', async () => {
+    if (!currentCode) return;
+    try {
+      await navigator.clipboard.writeText(currentCode);
+      message.textContent = 'Code copié.';
+    } catch (error) {
+      message.className = 'message error';
+      message.textContent = 'Copie automatique impossible : sélectionne le code et copie-le manuellement.';
+    }
+  });
+</script>
+</body>
+</html>

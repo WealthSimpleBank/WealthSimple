@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Retours sur investissement — WealthSimpleBank admin</title>
+  <style>
+    * { box-sizing:border-box; }
+    body { margin:0; padding:clamp(18px,4vw,30px) clamp(10px,3vw,16px); background:#0b1020; color:#f1f4ff; font:15px/1.5 system-ui,sans-serif; }
+    main { width:min(1100px,100%); margin:auto; }
+    a { color:#a9b7ff; }
+    h1 { margin:8px 0; }
+    .note { color:#bbc4da; }
+    .panel { padding:18px; border:1px solid #303953; border-radius:14px; background:#151c31; margin:18px 0; }
+    .table-wrap { overflow-x:auto; border:1px solid #303953; border-radius:12px; }
+    table { width:100%; border-collapse:collapse; min-width:680px; background:#151c31; }
+    th,td { padding:12px; border-bottom:1px solid #303953; text-align:left; }
+    th { color:#bbc4da; font-size:.8rem; text-transform:uppercase; }
+    .amount { color:#72dfa9; font-weight:700; white-space:nowrap; }
+    @media (max-width:520px) { .panel { padding:14px; } th,td { padding:10px 8px; } }
+  </style>
+</head>
+<body>
+<main>
+  <a href="/admin">← Retour au panneau admin</a>
+  <h1>Retours attribués</h1>
+  <p class="note">Chaque montant listé ici a été ajouté au solde affiché et enregistré avec son mouvement dans la même opération. Il constitue un rendement financier.</p>
+  <section class="panel">
+    {% if returns %}
+    <div class="table-wrap"><table>
+      <thead><tr><th>Date</th><th>Client</th><th>E-mail</th><th>Montant crédité</th><th>Administrateur</th></tr></thead>
+      <tbody>
+        {% for item in returns %}
+        <tr>
+          <td>{{ item.created_at }}</td>
+          <td>{{ item.first_name }} {{ item.last_name }}</td>
+          <td>{{ item.email }}</td>
+          <td class="amount">+{{ "%.2f"|format(item.amount|float) }} EUR</td>
+          <td>{{ item.admin_email or "Historique antérieur" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table></div>
+    {% else %}
+    <p class="note">Aucun retour sur investissement n’a encore été enregistré.</p>
+    {% endif %}
+  </section>
+</main>
+</body>
+</html>

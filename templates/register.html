@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="{{ csrf_token }}">
+  <title>Inscription — WealthSimpleBank</title>
+  <style>
+    :root { color-scheme: light dark; --bg:#0b1020; --card:#151c31; --text:#f1f4ff; --muted:#a6b0cc; --border:#303953; --accent:#758bff; --error:#ff8792; }
+    * { box-sizing:border-box; }
+    body { margin:0; min-height:100vh; min-height:100svh; padding:clamp(16px,4vw,32px) clamp(12px,4vw,16px); display:grid; place-items:center; background:var(--bg); color:var(--text); font:16px/1.5 system-ui,sans-serif; }
+    main { width:min(100%,620px); }
+    .banner { margin-bottom:20px; padding:12px 16px; border-radius:12px; background:#7a351c; text-align:center; font-weight:700; }
+    .card { padding:clamp(22px,5vw,40px); border:1px solid var(--border); border-radius:22px; background:var(--card); box-shadow:0 20px 70px #0005; }
+    h1 { margin:0 0 8px; font-size:1.7rem; }
+    .muted { color:var(--muted); margin:0 0 24px; }
+    .grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+    label { display:block; margin-bottom:5px; font-size:.88rem; font-weight:650; }
+    input,select { width:100%; min-height:46px; padding:10px 12px; border:1px solid var(--border); border-radius:10px; background:var(--bg); color:var(--text); font:inherit; }
+    .full { grid-column:1/-1; }
+    button { width:100%; min-height:48px; margin-top:20px; border:0; border-radius:11px; background:var(--accent); color:#fff; font:inherit; font-weight:700; cursor:pointer; }
+    button:disabled { opacity:.65; cursor:wait; }
+    .message { min-height:24px; margin-top:12px; color:var(--error); }
+    .hidden { display:none; }
+    .code { text-align:center; font-size:2rem; letter-spacing:.6rem; }
+    .foot { margin-top:18px; color:var(--muted); text-align:center; font-size:.82rem; }
+    .brand { display:flex; align-items:center; gap:14px; margin:0 0 20px; color:var(--text); font-weight:800; font-size:1.15rem; }
+    .brand-mark { display:grid; place-items:center; width:42px; height:42px; border:1px solid #d4d8e1; border-radius:12px; background:linear-gradient(145deg,#fff,#dce0e8); box-shadow:1px 2px 0 #a9afbb,3px 5px 0 #727987; color:#050505; font:900 25px/1 Arial,sans-serif; letter-spacing:-.12em; padding-right:.12em; text-shadow:1px 1px 0 #999,2px 2px 0 #777; }
+    a { color:#a9b7ff; }
+    @media (max-width:520px) {
+      body { place-items:start center; }
+      .grid { grid-template-columns:minmax(0,1fr); }
+      .full { grid-column:auto; }
+      .card { padding:clamp(18px,6vw,28px); }
+      .brand { gap:10px; font-size:1rem; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <a class="brand" href="/" aria-label="WealthSimpleBank, accueil"><span class="brand-mark" aria-hidden="true">W</span>WealthSimpleBank</a>
+      <form id="registration-form" class="{{ 'hidden' if registration_pending else '' }}">
+        <h1>Créer un compte</h1>
+        <p class="muted">Cette inscription crée un profil dans un espace professionnel ; aucun compte bancaire ou produit financier est demander ici. Seuls votre nom, votre e-mail et votre téléphone sont demandés pour cette étape. Un code à 4 chiffres vous sera ensuite communiqué.</p>
+        <div class="grid">
+            <div><label for="first_name">Prénom</label><input id="first_name" name="first_name" autocomplete="given-name" maxlength="50" required></div>
+          <div><label for="last_name">Nom</label><input id="last_name" name="last_name" autocomplete="family-name" maxlength="50" required></div>
+          <div class="full"><label for="email">Adresse e-mail</label><input id="email" name="email" type="email" autocomplete="email" maxlength="100" required></div>
+          <div class="full"><label for="phone">Numéro de téléphone</label><input id="phone" name="phone" type="tel" autocomplete="tel" maxlength="50" required></div>
+          <div class="full"><label for="password">Mot de passe (8 caractères minimum)</label><input id="password" name="password" type="password" autocomplete="new-password" minlength="8" required></div>
+        </div>
+        <button type="submit" id="start-button">Suivant — demander mon code</button>
+        <div class="message" id="registration-message" role="alert"></div>
+      </form>
+
+      <form id="verification-form" class="{{ '' if registration_pending else 'hidden' }}">
+        <h1>Confirmer votre inscription</h1>
+        <p class="muted">Votre demande est en attente. Contactez le service pour recevoir le code à 4 chiffres, puis saisissez-le ici.</p>
+        <label for="verification_code">Code de vérification</label>
+        <input class="code" id="verification_code" name="verification_code" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{4}" maxlength="4" placeholder="••••" required>
+        <button type="submit" id="verify-button">Vérifier le code et continuer</button>
+        <div class="message" id="verification-message" role="alert"></div>
+        <button type="button" id="edit-registration">Revenir aux informations</button>
+      </form>
+      <div class="foot">Le code expire après 24 heures et est limité à 5 essais. Aucun document ni moyen de paiement n’est demandé. <a href="/">Retour à l’accueil</a><br>© 2008 WealthSimpleBank — Tous droits réservés.</div>
+    </section>
+  </main>
+  <script>
+    const registrationForm = document.getElementById("registration-form");
+    const verificationForm = document.getElementById("verification-form");
+    document.getElementById("edit-registration").addEventListener("click", () => {
+      verificationForm.classList.add("hidden");
+      registrationForm.classList.remove("hidden");
+    });
+
+    async function sendJson(url, payload) {
+      const tokenResponse = await fetch("/api/csrf-token", { cache: "no-store" });
+      const tokenResult = await tokenResponse.json();
+      if (!tokenResponse.ok || !tokenResult.csrf_token) {
+        throw new Error("Impossible de vérifier votre session. Rechargez la page et réessayez.");
+      }
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-CSRF-Token": tokenResult.csrf_token },
+        body: JSON.stringify(payload)
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.message || "La demande n’a pas abouti.");
+      return result;
+    }
+
+    registrationForm.addEventListener("submit", async event => {
+      event.preventDefault();
+      const button = document.getElementById("start-button");
+      const message = document.getElementById("registration-message");
+      button.disabled = true;
+      message.textContent = "";
+      try {
+        const result = await sendJson("/api/registration/start", Object.fromEntries(new FormData(registrationForm)));
+        registrationForm.classList.add("hidden");
+        verificationForm.classList.remove("hidden");
+        history.replaceState(null, "", "/register?verification=1");
+        document.getElementById("verification_code").focus();
+        document.getElementById("verification-message").textContent = result.message;
+      } catch (error) {
+        message.textContent = error.message;
+      } finally {
+        button.disabled = false;
+      }
+    });
+
+    if (new URLSearchParams(window.location.search).has("verification")) {
+      registrationForm.classList.add("hidden");
+      verificationForm.classList.remove("hidden");
+    }
+
+    verificationForm.addEventListener("submit", async event => {
+      event.preventDefault();
+      const button = document.getElementById("verify-button");
+      const message = document.getElementById("verification-message");
+      button.disabled = true;
+      message.textContent = "";
+      try {
+        const result = await sendJson("/api/registration/verify", {
+          verification_code: document.getElementById("verification_code").value.trim()
+        });
+        window.location.assign(result.redirect);
+      } catch (error) {
+        message.textContent = error.message;
+      } finally {
+        button.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

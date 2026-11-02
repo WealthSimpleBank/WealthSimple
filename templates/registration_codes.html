@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Codes d’inscription — WealthSimpleBank</title>
+  <style>
+    * { box-sizing:border-box; }
+    body { margin:0; padding:clamp(18px,4vw,32px) clamp(10px,3vw,16px); background:#0b1020; color:#f1f4ff; font:15px/1.5 system-ui,sans-serif; }
+    main { width:min(100%,1100px); margin:auto; }
+    a { color:#a9b7ff; }
+    h1 { margin-bottom:8px; }
+    .note { color:#bbc4da; margin-bottom:24px; }
+    .table-wrap { overflow-x:auto; border:1px solid #303953; border-radius:14px; }
+    table { width:100%; border-collapse:collapse; background:#151c31; }
+    th,td { padding:13px 15px; border-bottom:1px solid #303953; text-align:left; white-space:nowrap; }
+    th { color:#bbc4da; font-size:.8rem; text-transform:uppercase; }
+    .code { font-size:1.25rem; font-weight:800; letter-spacing:.18em; }
+    .expired { color:#ff8792; }
+    .empty { padding:24px; color:#bbc4da; text-align:center; }
+    .back { display:inline-block; margin-bottom:18px; }
+    @media (max-width:600px) {
+      .back { margin:0 12px 12px 0; }
+      th,td { padding:10px; }
+      .code { letter-spacing:.1em; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <a class="back" href="/admin">← Retour au panneau admin</a>
+    <a class="back" href="/admin/waiting-list"> · Ouvrir la liste d’attente</a>
+    <h1>Demandes d’inscription et codes</h1>
+    <p class="note">Profils. Communique le code affiché à la personne concernée. Chaque code expire après 24 heures et est invalidé après 5 erreurs. Cette page est réservée aux administrateurs.</p>
+    {% if requests %}
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Demande</th><th>Nom</th><th>E-mail</th><th>Téléphone</th><th>Code à communiquer</th><th>Expire le</th></tr></thead>
+        <tbody>
+        {% for item in requests %}
+          <tr>
+            <td>{{ item.created_at }}</td>
+            <td>{{ item.first_name }} {{ item.last_name }}</td>
+            <td>{{ item.email }}</td>
+            <td>{{ item.phone }}</td>
+            {% if item.expires_at > now and item.failed_attempts < 5 %}
+              <td class="code">{{ item.verification_code }}</td>
+              <td>{{ item.expires_display }}</td>
+            {% else %}
+              <td class="expired">Invalide</td>
+              <td class="expired">Expiré ou verrouillé</td>
+            {% endif %}
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+      <div class="empty">Aucune demande d’inscription pour le moment.</div>
+    {% endif %}
+  </main>
+  <footer style="margin:24px auto 12px;text-align:center;color:#bbc4da;font-size:12px">© 2008 WealthSimpleBank — Tous droits réservés.</footer>
+</body>
+</html>

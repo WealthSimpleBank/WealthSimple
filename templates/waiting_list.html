@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="{{ csrf_token }}">
+  <title>Liste d’attente — WealthSimpleBank admin</title>
+  <style>
+    * { box-sizing:border-box; }
+    body { margin:0; padding:clamp(18px,4vw,32px) clamp(10px,3vw,16px); background:#0b1020; color:#f1f4ff; font:15px/1.5 system-ui,sans-serif; }
+    main { width:min(100%,1400px); margin:auto; }
+    a { color:#a9b7ff; }
+    h1 { margin-bottom:8px; }
+    .note { color:#bbc4da; margin-bottom:24px; }
+    .table-wrap { overflow-x:auto; border:1px solid #303953; border-radius:14px; }
+    table { width:100%; border-collapse:collapse; background:#151c31; }
+    th,td { padding:13px 15px; border-bottom:1px solid #303953; text-align:left; vertical-align:top; }
+    th { color:#bbc4da; font-size:.8rem; text-transform:uppercase; }
+    .empty { padding:24px; color:#bbc4da; text-align:center; }
+    .back { display:inline-block; margin-bottom:18px; }
+    button { padding:9px 13px; border:0; border-radius:9px; background:#758bff; color:white; font-weight:700; cursor:pointer; }
+    button:disabled { opacity:.6; cursor:wait; }
+    .status { color:#ffd478; font-weight:700; }
+    .error { color:#ff8792; }
+    .details { line-height:1.8; min-width:210px; }
+    .types { line-height:1.8; min-width:150px; }
+    @media (max-width:700px) {
+      body { padding:20px 10px; }
+      th,td { padding:10px; }
+      .details,.types { min-width:0; }
+      .back { margin-bottom:12px; }
+    }
+    @media (max-width:420px) {
+      main { overflow-wrap:anywhere; }
+      .details,.types { line-height:1.6; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <a class="back" href="/admin">← Retour au panneau admin</a>
+    <h1>Liste d’attente</h1>
+    <p class="note">Liste historique de demandes de test. Le parcours actuel ne demande ni pièce d’identité, ni justificatif, ni image de carte.</p>
+    {% if submissions %}
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Date</th><th>Informations du client</th><th>Pays</th><th>Choix historiques</th><th>Action</th></tr></thead>
+        <tbody>
+        {% for item in submissions %}
+          <tr id="submission-{{ item.id }}">
+            <td>{{ item.created_at }}</td>
+            <td class="details"><strong>{{ item.prenom }} {{ item.nom }}</strong><br>E-mail : {{ item.email }}<br>Téléphone : {{ item.tel }}</td>
+            <td>{{ item.pays }}</td>
+            <td class="types">Document : {{ item.doc_type or '—' }}<br>Justificatif : {{ item.bill_type or '—' }}</td>
+            <td>
+              <span class="status" id="status-{{ item.id }}">En attente</span>
+              <button type="button" data-submission-id="{{ item.id }}">Valider</button>
+              <div class="error" id="error-{{ item.id }}" role="alert"></div>
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+      <div class="empty">Aucun dossier en attente de validation.</div>
+    {% endif %}
+  </main>
+  <script>
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+    document.querySelectorAll("button[data-submission-id]").forEach(button => {
+      button.addEventListener("click", async () => {
+        const id = button.dataset.submissionId;
+        const error = document.getElementById(`error-${id}`);
+        button.disabled = true;
+        error.textContent = "";
+        try {
+          const response = await fetch(`/api/admin/activation-submissions/${id}/approve`, {
+            method: "POST",
+            headers: { "X-CSRF-Token": csrfToken }
+          });
+          const result = await response.json();
+          if (!response.ok) throw new Error(result.message || "Validation impossible.");
+          document.getElementById(`status-${id}`).textContent = "Validé";
+          button.closest("tr").remove();
+          if (!document.querySelector("tbody tr")) {
+            document.querySelector(".table-wrap").innerHTML = '<div class="empty">Aucun dossier en attente de validation.</div>';
+          }
+        } catch (exception) {
+          error.textContent = exception.message;
+          button.disabled = false;
+        }
+      });
+    });
+  </script>
+  <footer style="margin:24px auto 12px;text-align:center;color:#bbc4da;font-size:12px">© 2008 WealthSimpleBank — Tous droits réservés.</footer>
+</body>
+</html>

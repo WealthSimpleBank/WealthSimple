@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="{{ csrf_token }}">
+  <title>Portefeuille — WealthSimpleBank</title>
+  <style>
+    :root { color-scheme:dark; --bg:#080d18; --panel:#111b2c; --panel-raised:#17243a; --border:#2a3b54; --text:#f4f7fb; --muted:#b3c0d1; --accent:#d8b56d; --green:#74dfad; --red:#ff929b; --glow:rgba(216,181,109,.13); }
+    * { box-sizing:border-box; }
+    body { margin:0; padding:clamp(14px,3vw,24px) clamp(10px,3vw,16px) 50px; background:radial-gradient(ellipse at 12% 0%,rgba(45,67,94,.34),transparent 38%),var(--bg); color:var(--text); font:15px/1.55 system-ui,sans-serif; }
+    main { width:min(1200px,100%); min-width:0; margin:auto; }
+    a { color:var(--accent); }
+    .back-link { display:inline-flex; gap:8px; align-items:center; color:var(--muted); text-decoration:none; font-size:.9rem; }
+    .back-link:hover { color:var(--text); }
+    header { display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap; margin:18px 0 22px; padding:24px clamp(16px,3vw,30px); border:1px solid var(--border); border-radius:20px; background:linear-gradient(120deg,rgba(26,43,65,.98),rgba(15,25,41,.96)); box-shadow:0 18px 48px #0003; }
+    .hero-copy { display:grid; gap:5px; }
+    .eyebrow { color:var(--accent); font-size:.75rem; font-weight:800; letter-spacing:.13em; text-transform:uppercase; }
+    h1 { margin:0; font-size:clamp(1.6rem,4vw,2.35rem); letter-spacing:-.035em; }
+    .hero-description { max-width:640px; margin:3px 0 0; color:var(--muted); }
+    .market-badge { display:inline-flex; align-items:center; gap:8px; padding:9px 13px; border:1px solid rgba(216,181,109,.35); border-radius:999px; background:var(--glow); color:#f2d69f; font-size:.82rem; font-weight:750; }
+    .market-badge::before { content:""; width:8px; height:8px; border-radius:50%; background:var(--accent); box-shadow:0 0 12px var(--accent); }
+    h2 { margin:0 0 8px; font-size:1.15rem; letter-spacing:-.01em; }
+    h3 { margin:16px 0 8px; font-size:.97rem; }
+    .section-lead { margin:0 0 14px; color:var(--muted); font-size:.9rem; }
+    .grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; margin-bottom:20px; }
+    .panel,.stat { min-width:0; background:linear-gradient(155deg,rgba(21,34,54,.98),rgba(15,25,41,.98)); border:1px solid var(--border); border-radius:16px; padding:20px; box-shadow:0 10px 30px #0002; }
+    .stat { position:relative; overflow:hidden; }
+    .stat::after { content:""; position:absolute; width:100px; height:100px; right:-42px; top:-48px; border-radius:50%; background:var(--glow); }
+    .stat-label { color:var(--muted); font-size:.84rem; }
+    .stat-value { margin-top:6px; font-size:clamp(1.2rem,2vw,1.55rem); font-weight:800; letter-spacing:-.02em; font-variant-numeric:tabular-nums; }
+    .layout { display:grid; grid-template-columns:1.3fr .7fr; gap:16px; }
+    .panel { margin-bottom:16px; }
+    .field { display:flex; gap:8px; margin:10px 0 14px; flex-wrap:wrap; }
+    input,button,select { max-width:100%; font:inherit; border-radius:9px; padding:10px 12px; }
+    input,select { min-width:0; background:#0d1325; border:1px solid #465171; color:var(--text); }
+    button { min-height:44px; border:1px solid #e4c77e; background:linear-gradient(145deg,#e5c981,#c9a34f); color:#182130; font-weight:800; cursor:pointer; box-shadow:0 5px 16px rgba(201,163,79,.15); }
+    button:hover { filter:brightness(1.07); transform:translateY(-1px); }
+    button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible { outline:3px solid rgba(231,200,126,.7); outline-offset:2px; }
+    button:disabled { opacity:.55; cursor:wait; }
+    .secondary { border-color:var(--border); background:#24334a; color:var(--text); box-shadow:none; }
+    .danger { background:#773946; }
+    .table-wrap { max-width:100%; overflow:auto; -webkit-overflow-scrolling:touch; }
+    table { width:100%; border-collapse:collapse; min-width:540px; }
+    th,td { padding:13px 10px; border-bottom:1px solid rgba(89,111,139,.25); text-align:left; }
+    th { color:#d5deea; font-size:.74rem; letter-spacing:.07em; text-transform:uppercase; }
+    td small { color:var(--muted); }
+    .message { min-height:22px; margin:8px 0 0; color:var(--green); }
+    .error { color:var(--red); }
+    .empty { padding:12px 0; color:var(--muted); }
+    .history { max-height:320px; overflow:auto; }
+    .history-row { display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; overflow-wrap:anywhere; padding:9px 0; border-bottom:1px solid var(--border); }
+    .chart-head { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
+    .chart-head select { min-width:190px; }
+    .chart-wrap { position:relative; width:100%; height:320px; margin-top:14px; }
+    #price-chart { display:block; width:100%; height:100%; }
+    .chart-legend { display:flex; justify-content:space-between; gap:12px; color:var(--muted); font-size:.82rem; margin-top:8px; }
+    .brand-mark { display:inline-grid; place-items:center; width:46px; height:46px; border:1px solid #d4d8e1; border-radius:13px; background:linear-gradient(145deg,#fff,#dce0e8); box-shadow:1px 2px 0 #a9afbb,3px 5px 0 #727987,5px 8px 15px #0008,inset 1px 1px 2px #fff; color:#050505; font:900 28px/1 Arial,sans-serif; letter-spacing:-.12em; padding-right:.12em; text-shadow:1px 1px 0 #999,2px 2px 0 #777; }
+    .filter-row { display:flex; gap:10px; flex-wrap:wrap; margin:10px 0 14px; }
+    .filter-row label { display:grid; gap:5px; color:var(--muted); font-size:.82rem; }
+    .filter-row input,.filter-row select { min-width:min(220px,100%); }
+    .asset-identity { display:flex; align-items:center; gap:10px; min-width:190px; }
+    .asset-logo { display:grid; place-items:center; flex:none; width:38px; height:38px; border:1px solid #57617b; border-radius:12px; background:linear-gradient(145deg,#f6f7fb,#b8c0d2); box-shadow:1px 2px 0 #697287,2px 4px 8px #0007; color:#101624; font-weight:900; font-size:.95rem; }
+    .asset-title { font-weight:750; color:var(--text); }
+    .asset-meta { display:block; color:var(--muted); font-size:.76rem; }
+    .sparkline { display:block; width:112px; height:36px; }
+    .pnl-positive { color:var(--green); font-weight:700; }
+    .pnl-negative { color:var(--red); font-weight:700; }
+    .company-note { display:grid; grid-template-columns:auto minmax(0,1fr); gap:14px; align-items:start; padding:16px; margin-top:16px; border:1px solid rgba(216,181,109,.26); border-radius:14px; background:linear-gradient(120deg,rgba(216,181,109,.09),rgba(21,34,54,.75)); }
+    .company-note-mark { display:grid; place-items:center; width:42px; height:42px; border:1px solid rgba(216,181,109,.45); border-radius:13px; background:var(--glow); color:#f2d69f; font-size:1.1rem; font-weight:850; }
+    .company-note-title { margin:0; font-size:1rem; }
+    .company-note-meta { margin:2px 0 7px; color:var(--accent); font-size:.76rem; font-weight:750; }
+    .company-note-text { margin:0; color:#d3dce7; font-size:.89rem; }
+    .company-note-caption { margin:8px 0 0; color:var(--muted); font-size:.75rem; }
+    .company-link { min-height:32px; margin-top:7px; padding:5px 9px; border:1px solid var(--border); background:transparent; color:#e4c77e; box-shadow:none; font-size:.75rem; }
+    .company-link:hover { background:var(--glow); }
+    .section-heading { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap; margin-bottom:10px; }
+    .section-tag { padding:5px 9px; border-radius:999px; background:rgba(123,151,184,.13); color:#c8d5e4; font-size:.72rem; font-weight:750; }
+    .legacy-label { display:inline-block; margin-top:4px; color:#ffd478; font-size:.72rem; }
+    footer { color:var(--muted); font-size:.82rem; margin-top:10px; }
+    @media (max-width:800px) {
+      .layout { grid-template-columns:1fr; gap:0; }
+      .grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+      .grid > :last-child:nth-child(odd) { grid-column:1 / -1; }
+    }
+    @media (max-width:600px) {
+      body { padding:16px 10px 35px; }
+      .grid { grid-template-columns:1fr; gap:9px; }
+      .grid > :last-child:nth-child(odd) { grid-column:auto; }
+      header { align-items:flex-start; }
+      .panel,.stat { padding:14px; }
+      .field { align-items:stretch; }
+      #redeem-form input,#redeem-form button { flex:1 1 100%; width:100%; }
+      #buy-amount { width:100%; }
+      .chart-head { align-items:flex-start; }
+      .chart-head label { display:flex; flex-direction:column; gap:6px; }
+      .chart-head select { width:min(100%,280px); min-width:0; }
+      .chart-wrap { height:280px; }
+      .chart-legend { align-items:flex-start; flex-direction:column; gap:4px; }
+    }
+    @media (max-width:380px) {
+      body { padding-right:8px; padding-left:8px; }
+      .panel,.stat { padding:12px; }
+      .stat-value { font-size:1.25rem; overflow-wrap:anywhere; }
+      .chart-wrap { height:240px; }
+      th,td { padding:9px 7px; }
+    }
+    @media (max-width:520px) {
+      .filter-row { align-items:stretch; }
+      .filter-row label { flex:1 1 100%; min-width:0; }
+      .filter-row input,.filter-row select { width:100%; min-width:0; }
+      .field > input { flex:1 1 100%; width:100%; }
+      .field > .stat-label { flex:1 1 100%; }
+      .asset-identity { min-width:170px; }
+      .sparkline { width:88px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *,*::before,*::after { scroll-behavior:auto !important; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <a class="back-link" href="/dashboard">← Retour au tableau de bord</a>
+  <header>
+    <div class="hero-copy">
+      <span class="eyebrow">WealthSimpleBank</span>
+      <h1>Portefeuille</h1>
+      <p class="hero-description">Les montants et les cours. Les achats et ventes servent a investir sur de long terme à l’interface.</p>
+    </div>
+    <span class="market-badge" id="market-time">Cours</span>
+  </header>
+  <section class="grid" aria-label="Résumé du portefeuille de simulation">
+    <div class="stat"><div class="stat-label">Solde</div><div class="stat-value" id="credit-balance">— EUR</div><div class="section-tag">avec une valeur monétaire</div></div>
+    <div class="stat"><div class="stat-label">Valeur du portefeuille</div><div class="stat-value" id="positions-value">— EUR</div></div>
+    <div class="stat"><div class="stat-label">Variation</div><div class="stat-value" id="positions-change">— EUR</div></div>
+  </section>
+
+  <section class="panel" aria-labelledby="returns-title">
+    <h2 id="returns-title">Retours attribués</h2>
+    <p class="stat-label">Montants ajoutés au solde par l’administration dans cette application.</p>
+    <div class="stat" style="margin:14px 0">
+      <div class="stat-label">Total attribué</div>
+      <div class="stat-value" id="return-total">— EUR</div>
+    </div>
+    <h3>Historique des retours attribués</h3>
+    <div id="return-history" class="history"><p class="empty">Chargement…</p></div>
+  </section>
+
+  <section class="panel">
+    <h2>Ajouter un crédit</h2>
+    <p class="stat-label">Le code ajoute un montant au solde de cette application.</p>
+    <form id="redeem-form" class="field">
+      <input id="coupon-code" name="code" maxlength="32" autocomplete="off" placeholder="Code fourni par l’administrateur" required>
+      <button id="redeem-button" type="submit">Ajouter le crédit</button>
+    </form>
+    <p id="redeem-message" class="message" role="status"></p>
+  </section>
+
+  <section class="panel">
+    <div class="chart-head">
+      <div><h2>Évolution du portefeuille</h2><span class="stat-label">Courbe générée, des données de marché directes</span></div>
+      <label for="chart-asset">Actif
+        <select id="chart-asset"></select>
+      </label>
+    </div>
+    <div class="chart-wrap"><canvas id="price-chart" role="img" aria-label="Courbe des prix de l’actif sélectionné"></canvas></div>
+    <div class="chart-legend"><span id="chart-current">Cours: —</span><span>Mis à jour chaque minute ·</span></div>
+    <div class="company-note" id="company-note" aria-live="polite">
+      <span class="company-note-mark" id="company-note-mark" aria-hidden="true">W</span>
+      <div>
+        <h3 class="company-note-title" id="company-note-title">Repère société</h3>
+        <p class="company-note-meta" id="company-note-meta">Sélectionne une entreprise</p>
+        <p class="company-note-text" id="company-note-text">Une présentation interne sera affichée ici.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="layout">
+    <section class="panel">
+      <div class="section-heading"><h2>Actifs disponibles</h2><span class="section-tag"></span></div>
+      <p class="section-lead">commencez a investir. Bienvenue dans le monde de l'investissement.</p>
+      <div class="filter-row">
+        <label for="asset-search">Rechercher une société
+          <input id="asset-search" type="search" placeholder="Nom ou symbole">
+        </label>
+        <label for="sector-filter">Secteur
+          <select id="sector-filter"><option value="">Tous les secteurs</option></select>
+        </label>
+      </div>
+      <label for="buy-amount">Montant (EUR)</label>
+      <div class="field"><input id="buy-amount" type="number" min="0.01" max="1000000" step="0.01" value="100"><span class="stat-label">Déduit uniquement du solde.</span></div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Actif / symbole</th><th>Secteur</th><th>Cours</th><th>Action</th></tr></thead>
+        <tbody id="assets-body"></tbody>
+      </table></div>
+      <p id="trade-message" class="message" role="status"></p>
+    </section>
+
+    <section class="panel">
+      <h2>Mes positions</h2>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Position</th><th>Quantité</th><th>Valeur</th><th>Variation</th><th>Graphique</th><th>Action</th></tr></thead>
+        <tbody id="holdings-body"></tbody>
+      </table></div>
+      <p class="stat-label">Les achats et ventes ajustent uniquement le solde. Les positions représentent des actifs détenus.</p>
+    </section>
+  </div>
+
+  <section class="panel">
+    <h2>Historique des opérations</h2>
+    <div id="history" class="history"><p class="empty">Chargement…</p></div>
+  </section>
+  <footer>© 2008 WealthSimpleBank — Vrotre espace.</footer>
+</main>
+<script>
+  const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+  const formatEUR = value => `${Number(value).toLocaleString('fr-FR', {minimumFractionDigits:2, maximumFractionDigits:2})} EUR`;
+  const formatQuantity = value => Number(value).toLocaleString('fr-FR', {maximumFractionDigits:8});
+  const companyNotes = {
+    AAPL: 'Entreprise technologique connue pour ses appareils électroniques, ses logiciels et ses services numériques.',
+    NVDA: 'Entreprise de semi-conducteurs dont les processeurs graphiques sont utilisés dans plusieurs domaines informatiques.',
+    MSFT: 'Groupe technologique actif dans les logiciels, les services cloud, les jeux et les outils de productivité.',
+    AMZN: 'Groupe présent dans le commerce en ligne, les services cloud et plusieurs activités numériques.',
+    GOOGL: 'Société mère d’Alphabet, notamment active dans la recherche en ligne, la publicité et les services numériques.',
+    META: 'Groupe technologique qui développe des réseaux sociaux, des services de communication et des technologies immersives.',
+    TSLA: 'Entreprise connue pour ses véhicules électriques, ses solutions de stockage d’énergie et ses logiciels associés.',
+    ORCL: 'Éditeur de logiciels d’entreprise et fournisseur de services de bases de données et de cloud.',
+    JPM: 'Groupe bancaire américain proposant des services financiers aux particuliers, aux entreprises et aux institutions.',
+    V: 'Réseau de paiement électronique reliant des consommateurs, des commerçants et des institutions financières.',
+    MA: 'Réseau international de paiement et de services technologiques pour les transactions électroniques.',
+    KO: 'Entreprise de boissons dont le portefeuille comprend des marques commercialisées dans plusieurs pays.',
+    WMT: 'Groupe de distribution exploitant des magasins et des services de commerce en ligne.',
+    COST: 'Réseau de magasins-entrepôts fonctionnant principalement sur un modèle d’adhésion.',
+    MCD: 'Groupe de restauration rapide exploitant des restaurants en propre et en franchise.',
+    NKE: 'Entreprise de vêtements, chaussures et équipements destinés notamment aux activités sportives.',
+    LLY: 'Entreprise pharmaceutique développant et commercialisant des médicaments.',
+    JNJ: 'Groupe de santé actif dans les produits pharmaceutiques et les technologies médicales.',
+    PFE: 'Entreprise pharmaceutique active dans la recherche, le développement et la commercialisation de médicaments.',
+    XOM: 'Groupe énergétique présent dans la production, le transport et le raffinage d’hydrocarbures.',
+    CVX: 'Groupe énergétique actif dans la production, le raffinage et la commercialisation de produits énergétiques.',
+    CAT: 'Fabricant d’équipements pour la construction, les mines et d’autres secteurs industriels.',
+    LIN: 'Fournisseur de gaz industriels et de technologies associées pour différents secteurs économiques.',
+    DIS: 'Groupe de divertissement présent dans les médias, les contenus, les parcs et les expériences de loisirs.',
+    TSM: 'Fonderie de semi-conducteurs qui fabrique des composants électroniques pour des clients tiers.',
+    BTC: 'Actif numérique présenté ici comme référence historique interne du portefeuille.',
+    ETH: 'Actif numérique associé à une blockchain programmable, conservé ici comme position historique interne.',
+    SOL: 'Actif numérique associé à une plateforme blockchain, présenté ici comme position historique interne.',
+    XRP: 'Actif numérique conservé dans l’historique interne du portefeuille.',
+    ADA: 'Actif numérique associé au réseau Cardano, conservé ici comme position historique interne.',
+    DOGE: 'Actif numérique issu d’un projet communautaire, conservé ici comme position historique interne.',
+    DOT: 'Actif numérique associé au réseau Polkadot, présenté ici comme position historique interne.',
+    LINK: 'Actif numérique associé à un réseau d’oracles, présenté ici comme position historique interne.',
+    AVAX: 'Actif numérique associé au réseau Avalanche, conservé ici comme position historique interne.',
+    LTC: 'Actif numérique conservé dans l’historique interne du portefeuille.'
+  };
+  let portfolioAssets = [];
+  let selectedHistoryPoint = null;
+
+  function updateCompanyNote(asset) {
+    if (!asset) return;
+    document.getElementById('company-note-mark').textContent = asset.monogram;
+    document.getElementById('company-note-title').textContent = asset.name;
+    document.getElementById('company-note-meta').textContent = `${asset.symbol} · ${asset.sector}`;
+    document.getElementById('company-note-text').textContent =
+      companyNotes[asset.symbol] || 'Société présentée dans ce portefeuille interne à des fins de gestion et d’analyse.';
+  }
+
+  function selectCompany(asset) {
+    const chartSelect = document.getElementById('chart-asset');
+    chartSelect.value = asset.symbol;
+    document.getElementById('chart-current').textContent =
+      `Cours ${asset.symbol} : ${formatEUR(asset.price)}`;
+    selectedHistoryPoint = null;
+    updateCompanyNote(asset);
+    drawPriceChart();
+  }
+
+  function drawPriceChart() {
+    const canvas = document.getElementById('price-chart');
+    const ctx = canvas.getContext('2d');
+    const bounds = canvas.getBoundingClientRect();
+    const ratio = window.devicePixelRatio || 1;
+    const width = Math.max(1, bounds.width);
+    const height = Math.max(1, bounds.height);
+    if (canvas.width !== Math.round(width * ratio) || canvas.height !== Math.round(height * ratio)) {
+      canvas.width = Math.round(width * ratio);
+      canvas.height = Math.round(height * ratio);
+    }
+    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+    ctx.clearRect(0, 0, width, height);
+
+    const asset = portfolioAssets.find(item => item.symbol === document.getElementById('chart-asset').value);
+    const values = asset ? asset.history : [];
+    if (!values || values.length < 2) {
+      ctx.fillStyle = '#aab4ce';
+      ctx.font = '14px system-ui';
+      ctx.fillText('Chargement de la courbe de simulation…', 18, 32);
+      return;
+    }
+
+    const padding = {top:18,right:18,bottom:30,left:76};
+    const plotWidth = width - padding.left - padding.right;
+    const plotHeight = height - padding.top - padding.bottom;
+    const low = Math.min(...values);
+    const high = Math.max(...values);
+    const spread = Math.max(high - low, high * 0.001);
+    const min = low - spread * 0.16;
+    const max = high + spread * 0.16;
+    const pointAt = index => ({
+      x: padding.left + index * plotWidth / (values.length - 1),
+      y: padding.top + (max - values[index]) * plotHeight / (max - min)
+    });
+
+    ctx.font = '11px system-ui';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    for (let line = 0; line <= 4; line++) {
+      const y = padding.top + line * plotHeight / 4;
+      const value = max - line * (max - min) / 4;
+      ctx.strokeStyle = 'rgba(170,180,206,.14)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(padding.left, y);
+      ctx.lineTo(width - padding.right, y);
+      ctx.stroke();
+      ctx.fillStyle = '#aab4ce';
+      ctx.fillText(value.toLocaleString('fr-FR',{maximumFractionDigits:4}), padding.left - 9, y);
+    }
+
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    [['-60 min',0],['-45 min',.25],['-30 min',.5],['-15 min',.75],['maintenant',1]].forEach(([label,position]) => {
+      const x = padding.left + plotWidth * position;
+      ctx.fillStyle = '#aab4ce';
+      ctx.fillText(label, x, height - padding.bottom + 8);
+    });
+
+    const points = values.map((_,index) => pointAt(index));
+    const gradient = ctx.createLinearGradient(0,padding.top,0,padding.top+plotHeight);
+    gradient.addColorStop(0,'rgba(118,142,255,.28)');
+    gradient.addColorStop(1,'rgba(118,142,255,0)');
+    ctx.beginPath();
+    ctx.moveTo(points[0].x,padding.top+plotHeight);
+    points.forEach(point => ctx.lineTo(point.x,point.y));
+    ctx.lineTo(points[points.length-1].x,padding.top+plotHeight);
+    ctx.closePath();
+    ctx.fillStyle = gradient;
+    ctx.fill();
+
+    ctx.beginPath();
+    points.forEach((point,index) => {
+      if (!index) ctx.moveTo(point.x,point.y);
+      else {
+        const previous = points[index-1];
+        const midpoint = (previous.x + point.x) / 2;
+        ctx.quadraticCurveTo(previous.x,previous.y,midpoint,(previous.y+point.y)/2);
+      }
+    });
+    ctx.lineTo(points[points.length-1].x,points[points.length-1].y);
+    ctx.strokeStyle = '#93a5ff';
+    ctx.lineWidth = 2.5;
+    ctx.lineJoin = 'round';
+    ctx.shadowColor = 'rgba(118,142,255,.55)';
+    ctx.shadowBlur = 10;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    const progress = (Date.now() % 4500) / 4500;
+    const movingIndex = Math.min(points.length - 1, Math.floor(progress * points.length));
+    const movingPoint = points[movingIndex];
+    ctx.beginPath();
+    ctx.arc(movingPoint.x,movingPoint.y,4.5,0,Math.PI*2);
+    ctx.fillStyle = '#c8d2ff';
+    ctx.shadowColor = '#91a5ff';
+    ctx.shadowBlur = 14;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    if (selectedHistoryPoint !== null) {
+      const point = points[selectedHistoryPoint];
+      ctx.beginPath();
+      ctx.arc(point.x,point.y,4,0,Math.PI*2);
+      ctx.fillStyle = '#ffffff';
+      ctx.fill();
+    }
+  }
+
+  async function requestJson(url, options = {}) {
+    const response = await fetch(url, options);
+    let result;
+    const contentType = response.headers.get('Content-Type') || '';
+
+    if (contentType.includes('application/json')) {
+      result = await response.json();
+    } else {
+      const text = await response.text();
+      result = { success: false, message: text.trim() || 'La requête a échoué.' };
+    }
+
+    if (!response.ok || !result.success) {
+      const errorMessage = result && result.message ? result.message : 'La requête a échoué.';
+      throw new Error(errorMessage);
+    }
+    return result;
+  }
+
+  function makeCell(text) {
+    const cell = document.createElement('td');
+    cell.textContent = text;
+    return cell;
+  }
+
+  function makeAssetIdentity(asset, legacy = false) {
+    const identity = document.createElement('div');
+    identity.className = 'asset-identity';
+    const logo = document.createElement('span');
+    logo.className = 'asset-logo';
+    logo.textContent = asset.monogram;
+    logo.setAttribute('aria-hidden', 'true');
+    const details = document.createElement('span');
+    const title = document.createElement('span');
+    title.className = 'asset-title';
+    title.textContent = asset.name;
+    const meta = document.createElement('span');
+    meta.className = 'asset-meta';
+    meta.textContent = asset.symbol;
+    details.append(title, meta);
+    if (legacy) {
+      const legacyNote = document.createElement('span');
+      legacyNote.className = 'legacy-label';
+      legacyNote.textContent = 'Position historique';
+      details.append(legacyNote);
+    }
+    identity.append(logo, details);
+    return identity;
+  }
+
+  function makeSparkline(values, change, label) {
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('viewBox', '0 0 112 36');
+    svg.setAttribute('class', 'sparkline');
+    svg.setAttribute('role', 'img');
+    svg.setAttribute('aria-label', `Évolution interne de ${label}`);
+    const numbers = values.map(Number).filter(Number.isFinite);
+    if (numbers.length < 2) return svg;
+    const low = Math.min(...numbers);
+    const span = Math.max(Math.max(...numbers) - low, Math.abs(low) * 0.001, 0.000001);
+    const step = 112 / (numbers.length - 1);
+    const points = numbers.map((value, index) =>
+      `${(index * step).toFixed(1)},${(33 - ((value - low) / span) * 30).toFixed(1)}`
+    ).join(' ');
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+    line.setAttribute('points', points);
+    line.setAttribute('fill', 'none');
+    line.setAttribute('stroke', change >= 0 ? '#65dfa4' : '#ff8891');
+    line.setAttribute('stroke-width', '2.5');
+    line.setAttribute('stroke-linecap', 'round');
+    line.setAttribute('stroke-linejoin', 'round');
+    svg.append(line);
+    return svg;
+  }
+
+  function renderAssets() {
+    const search = document.getElementById('asset-search').value.trim().toLocaleLowerCase('fr-FR');
+    const sector = document.getElementById('sector-filter').value;
+    const assetsBody = document.getElementById('assets-body');
+    assetsBody.replaceChildren();
+    const visibleAssets = portfolioAssets.filter(asset =>
+      (!sector || asset.sector === sector) &&
+      (!search || `${asset.name} ${asset.symbol} ${asset.sector}`.toLocaleLowerCase('fr-FR').includes(search))
+    );
+    if (!visibleAssets.length) {
+      const row = document.createElement('tr');
+      const cell = makeCell('Aucune société ne correspond à cette recherche.');
+      cell.colSpan = 4;
+      row.append(cell);
+      assetsBody.append(row);
+      return;
+    }
+    visibleAssets.forEach(asset => {
+      const row = document.createElement('tr');
+      const identity = document.createElement('td');
+      const company = makeAssetIdentity(asset);
+      const detailsButton = document.createElement('button');
+      detailsButton.type = 'button';
+      detailsButton.className = 'company-link';
+      detailsButton.textContent = 'Voir le repère';
+      detailsButton.addEventListener('click', () => selectCompany(asset));
+      company.append(detailsButton);
+      identity.append(company);
+      const action = document.createElement('td');
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.textContent = 'Acheter';
+      button.addEventListener('click', () => trade(asset.symbol, 'buy'));
+      action.append(button);
+      row.append(
+        identity,
+        makeCell(asset.sector),
+        makeCell(formatEUR(asset.price)),
+        action
+      );
+      assetsBody.append(row);
+    });
+  }
+
+  async function loadPortfolio() {
+    const data = await requestJson('/api/demo-investments');
+    portfolioAssets = data.assets;
+    const chartSelect = document.getElementById('chart-asset');
+    const selectedSymbol = chartSelect.value;
+    if (chartSelect.options.length !== data.assets.length) {
+      chartSelect.replaceChildren();
+      data.assets.forEach(asset => {
+        const option = document.createElement('option');
+        option.value = asset.symbol;
+        option.textContent = `${asset.name} (${asset.symbol})`;
+        chartSelect.append(option);
+      });
+      if (data.assets.some(asset => asset.symbol === selectedSymbol)) chartSelect.value = selectedSymbol;
+    }
+    const chartAsset = data.assets.find(asset => asset.symbol === chartSelect.value) || data.assets[0];
+    document.getElementById('chart-current').textContent = `Cours${chartAsset.symbol} : ${formatEUR(chartAsset.price)}`;
+    updateCompanyNote(chartAsset);
+    selectedHistoryPoint = null;
+    drawPriceChart();
+    document.getElementById('credit-balance').textContent = formatEUR(data.balance);
+    document.getElementById('return-total').textContent = formatEUR(data.return_total);
+    const returnHistory = document.getElementById('return-history');
+    returnHistory.replaceChildren();
+    if (!data.return_history.length) {
+      const empty = document.createElement('p');
+      empty.className = 'empty';
+      empty.textContent = 'Aucun retour reçu pour le moment.';
+      returnHistory.append(empty);
+    }
+    data.return_history.forEach(item => {
+      const row = document.createElement('div');
+      row.className = 'history-row';
+      const details = document.createElement('span');
+      const date = new Date(item.created_at).toLocaleString('fr-FR');
+      details.textContent = `Crédit· ${date}`;
+      const amount = document.createElement('span');
+      amount.className = 'pnl-positive';
+      amount.textContent = `+${formatEUR(item.amount)}`;
+      row.append(details, amount);
+      returnHistory.append(row);
+    });
+    const totalValue = data.holdings.reduce((sum, holding) => sum + holding.value, 0);
+    const totalChange = data.holdings.reduce((sum, holding) => sum + holding.simulated_change, 0);
+    document.getElementById('positions-value').textContent = formatEUR(totalValue);
+    const changeElement = document.getElementById('positions-change');
+    changeElement.textContent = `${totalChange >= 0 ? '+' : ''}${formatEUR(totalChange)}`;
+    changeElement.style.color = totalChange >= 0 ? 'var(--green)' : 'var(--red)';
+    document.getElementById('market-time').textContent = `Cours · ${new Date().toLocaleTimeString('fr-FR')}`;
+
+    const sectorFilter = document.getElementById('sector-filter');
+    const existingSector = sectorFilter.value;
+    const sectors = [...new Set(data.assets.map(asset => asset.sector))].sort((a, b) => a.localeCompare(b, 'fr'));
+    sectorFilter.replaceChildren(new Option('Tous les secteurs', ''));
+    sectors.forEach(sector => sectorFilter.append(new Option(sector, sector)));
+    if (sectors.includes(existingSector)) sectorFilter.value = existingSector;
+    renderAssets();
+
+    const holdingsBody = document.getElementById('holdings-body');
+    holdingsBody.replaceChildren();
+    if (!data.holdings.length) {
+      const row = document.createElement('tr');
+      const cell = makeCell('Votre position pour le moment.');
+      cell.colSpan = 6;
+      row.append(cell);
+      holdingsBody.append(row);
+    }
+    data.holdings.forEach(holding => {
+      const row = document.createElement('tr');
+      const identity = document.createElement('td');
+      identity.append(makeAssetIdentity(holding, holding.legacy));
+      const variation = makeCell(`${holding.simulated_change >= 0 ? '+' : ''}${formatEUR(holding.simulated_change)}`);
+      variation.className = holding.simulated_change >= 0 ? 'pnl-positive' : 'pnl-negative';
+      const chart = document.createElement('td');
+      chart.append(makeSparkline(holding.history, holding.simulated_change, holding.name));
+      row.append(
+        identity,
+        makeCell(formatQuantity(holding.quantity)),
+        makeCell(formatEUR(holding.value)),
+        variation,
+        chart,
+      );
+      const action = document.createElement('td');
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'secondary';
+      button.textContent = 'Vendre';
+      button.addEventListener('click', () => trade(holding.symbol, 'sell', holding.quantity));
+      action.append(button);
+      row.append(action);
+      holdingsBody.append(row);
+    });
+
+    const history = document.getElementById('history');
+    history.replaceChildren();
+    if (!data.trades.length) {
+      const empty = document.createElement('p');
+      empty.className = 'empty';
+      empty.textContent = 'Aucune opération enregistrée.';
+      history.append(empty);
+    }
+    data.trades.forEach(trade => {
+      const row = document.createElement('div');
+      row.className = 'history-row';
+      const description = document.createElement('span');
+      description.textContent = `${trade.side === 'buy' ? 'Achat' : 'Vente'} · ${trade.symbol} · ${formatQuantity(trade.quantity)}`;
+      const amount = document.createElement('span');
+      amount.textContent = formatEUR(trade.credits);
+      row.append(description, amount);
+      history.append(row);
+    });
+  }
+
+  document.getElementById('chart-asset').addEventListener('change', event => {
+    selectedHistoryPoint = null;
+    const asset = portfolioAssets.find(item => item.symbol === event.currentTarget.value);
+    updateCompanyNote(asset);
+    drawPriceChart();
+  });
+  document.getElementById('price-chart').addEventListener('pointermove', event => {
+    const canvas = event.currentTarget;
+    const asset = portfolioAssets.find(item => item.symbol === document.getElementById('chart-asset').value);
+    if (!asset || !asset.history.length) return;
+    const bounds = canvas.getBoundingClientRect();
+    const left = 76;
+    const right = 18;
+    const usableWidth = bounds.width - left - right;
+    const fraction = Math.min(1,Math.max(0,(event.clientX-bounds.left-left)/usableWidth));
+    selectedHistoryPoint = Math.round(fraction*(asset.history.length-1));
+    const value = asset.history[selectedHistoryPoint];
+    document.getElementById('chart-current').textContent =
+      `${asset.symbol} · ${selectedHistoryPoint-asset.history.length+1} min · ${formatEUR(value)}`;
+    drawPriceChart();
+  });
+  document.getElementById('price-chart').addEventListener('pointerleave', () => {
+    selectedHistoryPoint = null;
+    const asset = portfolioAssets.find(item => item.symbol === document.getElementById('chart-asset').value);
+    if (asset) document.getElementById('chart-current').textContent = `Cours simulé ${asset.symbol} : ${formatEUR(asset.price)}`;
+    drawPriceChart();
+  });
+  document.getElementById('asset-search').addEventListener('input', renderAssets);
+  document.getElementById('sector-filter').addEventListener('change', renderAssets);
+  window.addEventListener('resize', drawPriceChart);
+  function animateChart() {
+    drawPriceChart();
+    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      window.requestAnimationFrame(animateChart);
+    }
+  }
+
+  async function trade(symbol, side, quantity) {
+    const message = document.getElementById('trade-message');
+    message.className = 'message';
+    try {
+      const payload = {symbol, side};
+      if (side === 'buy') payload.amount = document.getElementById('buy-amount').value;
+      else payload.quantity = quantity;
+      const result = await requestJson('/api/demo-investments/trade', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json','X-CSRF-Token':csrfToken},
+        body: JSON.stringify(payload)
+      });
+      message.textContent = result.message;
+      await loadPortfolio();
+    } catch (error) {
+      message.classList.add('error');
+      message.textContent = error.message;
+    }
+  }
+
+  document.getElementById('redeem-form').addEventListener('submit', async event => {
+    event.preventDefault();
+    const button = document.getElementById('redeem-button');
+    const message = document.getElementById('redeem-message');
+    button.disabled = true;
+    message.className = 'message';
+    try {
+      const result = await requestJson('/api/demo-investments/redeem', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json','X-CSRF-Token':csrfToken},
+        body: JSON.stringify({code:document.getElementById('coupon-code').value})
+      });
+      message.textContent = result.message;
+      document.getElementById('coupon-code').value = '';
+      await loadPortfolio();
+    } catch (error) {
+      message.classList.add('error');
+      message.textContent = error.message;
+    } finally {
+      button.disabled = false;
+    }
+  });
+
+  loadPortfolio().catch(error => {
+    document.getElementById('trade-message').classList.add('error');
+    document.getElementById('trade-message').textContent = error.message;
+  });
+  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    window.requestAnimationFrame(animateChart);
+  } else {
+    drawPriceChart();
+  }
+  setInterval(() => loadPortfolio().catch(error => console.error('Portfolio refresh failed:', error)), 15000);
+</script>
+</body>
+</html>
