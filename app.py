@@ -4091,3 +4091,70 @@ if __name__ == "__main__":
     )
     print(f"[{BRAND_NAME}] Démarrage sur http://0.0.0.0:{port} | {'PostgreSQL' if PG else 'SQLite'}")
     app.run(host="0.0.0.0", port=port, debug=debug)
+# ==========================================
+# GESTION DES VIREMENTS ET DU SOLDE (NEASIMPLE)
+# ==========================================
+
+class Virement(db.Model):
+    __tablename__ = 'virement'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    montant = db.Column(db.Float, nullable=False)
+    beneficiaire = db.Column(db.String(100), nullable=False)
+    statut = db.Column(db.String(20), default='en_cours') # 'en_cours' ou 'annule'
+
+# Route pour lancer le virement (l'argent quitte le solde)
+@app.route('/creer-virement', methods=['POST'])
+def creer_virement():
+    # Récupération de l'utilisateur connecté (adaptez 'user_id' selon votre session actuelle)
+    user_id = session.get('user_id') 
+    if not user_id:
+        return redirect(url_for('login'))
+        
+    user = User.query.get(user_id)
+    montant = float(request.form.get('montant', 0))
+    beneficiaire = request.form.get('beneficiaire')
+    
+    # Vérification si le solde est suffisant
+    if user.solde < montant:
+        flash("Solde insuffisant pour effectuer ce virement.", "danger")
+        return redirect(url_for('dashboard'))
+        
+    # 1. L'argent quitte immédiatement le solde principal
+    user.solde -= montant
+    
+    # 2. Le virement est créé et reste bloqué "en_cours"
+    nouveau_virement = Virement(
+        user_id=user.id,
+        montant=montant,
+        beneficiaire=beneficiaire,
+        statut='en_cours'
+    )
+    db.session.add(nouveau_virement)
+    db.session.commit()
+    
+    flash("Votre virement a été initié avec succès et est en cours.", "success")
+    return redirect(url_for('dashboard'))
+
+# Route pour annuler le virement (l'argent revient sur le solde principal)
+@app.route('/annuler-virement/<int:id>', methods=['POST'])
+def annuler_virement(id):
+    user_id = session.get('user_id')
+    virement = Virement.query.get_or_404(id)
+    
+    # Vérification de sécurité : appartient bien au client et est bien en cours
+    if virement.user_id == user_id and virement.statut == 'en_cours':
+        user = User.query.get(user_id)
+        
+        # 1. L'argent revient sur le solde principal
+        user.solde += virement.montant
+        
+        # 2. On change le statut en annulé
+        virement.statut = 'annule'
+        db.session.commit()
+        
+        flash("Virement annulé. Les fonds ont été recrédités sur votre solde principal.", "success")
+    else:
+        flash("Impossible d'annuler ce virement.", "danger")
+        
+    return redirect(url_for('dashboard'))
