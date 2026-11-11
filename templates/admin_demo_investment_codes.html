@@ -3,130 +3,140 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="csrf-token" content="{{ csrf_token }}">
-  <title>Crédits — WealthSimpleBank admin</title>
+  <title>Tableau de bord — WealthSimpleBank</title>
   <style>
-    * { box-sizing:border-box; }
-    body { margin:0; padding:clamp(18px,4vw,30px) clamp(10px,3vw,16px); background:#0b1020; color:#f1f4ff; font:15px/1.5 system-ui,sans-serif; }
-    main { width:min(1050px,100%); margin:auto; }
-    a { color:#a9b7ff; }
-    h1 { margin:8px 0; }
-    .note { color:#bbc4da; }
-    .warning { padding:14px 16px; margin:18px 0; border:1px solid #84532b; border-radius:12px; background:#3c2819; color:#ffe0b3; }
-    .panel { padding:18px; border:1px solid #303953; border-radius:14px; background:#151c31; margin:18px 0; }
-    form { display:flex; align-items:end; gap:10px; flex-wrap:wrap; }
-    form label { flex:1 1 100%; }
-    input,button { padding:10px 12px; border:0; border-radius:8px; font:inherit; }
-    input { background:#0b1020; color:#fff; border:1px solid #465171; }
-    button { background:#758bff; color:#fff; font-weight:700; cursor:pointer; }
-    button:disabled { opacity:.6; cursor:wait; }
-    .code { margin-top:14px; font:800 1.3rem ui-monospace,monospace; letter-spacing:.12em; overflow-wrap:anywhere; }
-    .message { color:#72dfa9; min-height:22px; }
-    .error { color:#ff8792; }
-    .table-wrap { overflow-x:auto; border:1px solid #303953; border-radius:12px; }
-    table { width:100%; border-collapse:collapse; min-width:620px; background:#151c31; }
-    th,td { padding:12px; border-bottom:1px solid #303953; text-align:left; }
-    th { color:#bbc4da; font-size:.8rem; text-transform:uppercase; }
-    .badge { font-weight:700; color:#ffd478; }
-    .used { color:#72dfa9; }
-    @media (max-width:520px) {
-      .panel { padding:14px; }
-      form input { flex:1 1 100%; width:100%; }
-      form button { flex:1 1 100%; min-height:44px; }
-      th,td { padding:10px 8px; }
-    }
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: clamp(18px, 4vw, 30px) clamp(10px, 3vw, 16px); background: #0b1020; color: #f1f4ff; font: 15px/1.5 system-ui, sans-serif; }
+    main { width: min(1050px, 100%); margin: auto; }
+    h1, h2 { color: #fff; }
+    .card { padding: 20px; border: 1px solid #303953; border-radius: 14px; background: #151c31; margin: 18px 0; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+    .balance-box { font-size: 1.8rem; font-weight: bold; color: #d4af37; margin-bottom: 20px; }
+    form { display: flex; flex-direction: column; gap: 14px; }
+    label { font-size: 0.9rem; color: #bbc4da; }
+    input, button { padding: 12px; border: 0; border-radius: 8px; font: inherit; }
+    input { background: #0b1020; color: #fff; border: 1px solid #465171; }
+    input:focus { border-color: #d4af37; outline: none; }
+    button { background: #d4af37; color: #0b1020; font-weight: 700; cursor: pointer; transition: background 0.2s; }
+    button:hover { background: #e6c558; }
+    .btn-danger-outline { background: transparent; border: 1px solid #ff8792; color: #ff8792; padding: 6px 12px; font-size: 0.85rem; font-weight: 600; border-radius: 6px; cursor: pointer; }
+    .btn-danger-outline:hover { background: #ff8792; color: #fff; }
+    .table-wrap { overflow-x: auto; border: 1px solid #303953; border-radius: 12px; margin-top: 15px; }
+    table { width: 100%; border-collapse: collapse; min-width: 650px; background: #151c31; }
+    th, td { padding: 14px 12px; border-bottom: 1px solid #303953; text-align: left; }
+    th { color: #bbc4da; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    .badge-warning { background: #fff3cd; color: #856404; padding: 4px 8px; border-radius: 6px; font-size: 0.85rem; font-weight: 700; }
+    .badge-secondary { background: #384158; color: #adb5bd; padding: 4px 8px; border-radius: 6px; font-size: 0.85rem; font-weight: 700; }
+    .flash-messages { margin-bottom: 20px; }
+    .alert { padding: 12px 16px; border-radius: 8px; margin-bottom: 10px; font-weight: 500; }
+    .alert-success { background: #155724; color: #d4edda; border: 1px solid #c3e6cb; }
+    .alert-danger { background: #721c24; color: #f8d7da; border: 1px solid #f5c6cb; }
+  .flash-info { background: #0c5460; color: #d1ecf1; border: 1px solid #bee5eb; }
   </style>
 </head>
 <body>
 <main>
-  <a href="/admin">← Retour au panneau admin</a>
-  <h1>Codes de crédit</h1>
-  <p class="note">Crée un code à usage unique pour ajouter un montant au solde du client.</p>
+  <!-- Affichage des messages flash (succès / erreurs) -->
+  <div class="flash-messages">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ 'success' if category == 'success' else ('danger' if category == 'danger' else 'info') }}">
+            {{ message }}
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+  </div>
 
-  <section class="panel">
-    <h2>Générer un code</h2>
-    <form id="create-form">
-      <label for="credits">Montant en EUR (maximum 100 000)</label>
-      <input id="credits" name="credits" type="number" min="0.01" max="100000" step="0.01" value="1000" required>
-      <button id="create-button" type="submit">Générer le code</button>
+  <h1>Espace Client — NeaSimple</h1>
+  
+  <!-- Encadré du Solde Principal -->
+  <div class="card">
+    <h2>Solde Principal Disponible</h2>
+    <div class="balance-box">
+      {{ "%.2f"|format(user.solde|float) }} EUR
+    </div>
+  </div>
+
+  <!-- Formulaire de virement avec saisie du RIB / IBAN -->
+  <div class="card">
+    <h3 style="margin-top: 0; color: #d4af37;">💸 Initier un virement</h3>
+    <form action="{{ url_for('creer_virement') }}" method="POST">
+      <div>
+        <label for="beneficiaire">Nom du Bénéficiaire</label>
+        <input type="text" id="beneficiaire" name="beneficiaire" placeholder="Ex: Jean Dupont" required>
+      </div>
+
+      <div>
+        <label for="iban">RIB / IBAN du destinataire</label>
+        <input type="text" id="iban" name="iban" placeholder="FR76 XXXX XXXX XXXX XXXX XXXX XXX" required>
+      </div>
+
+      <div>
+        <label for="montant">Montant en EUR</label>
+        <input type="number" id="montant" name="montant" min="0.01" step="0.01" placeholder="0.00" required>
+      </div>
+
+      <button type="submit">Lancer le virement (En cours)</button>
     </form>
-    <p id="message" class="message" role="status"></p>
-    <div id="generated-code" class="code" aria-live="polite"></div>
-    <button id="copy-button" type="button" hidden>Copier le code</button>
-  </section>
+  </div>
 
-  <h2>Codes de test créés</h2>
-  {% if codes %}
-  <div class="table-wrap"><table>
-    <thead><tr><th>Créé le</th><th>Crédits</th><th>Créé par</th><th>Statut</th><th>Utilisé par</th></tr></thead>
-    <tbody>
-      {% for item in codes %}
-      <tr>
-        <td>{{ item.created_at }}</td>
-        <td>{{ "%.2f"|format(item.credits|float) }} EUR</td>
-        <td>{{ item.creator_email }}</td>
-        {% if item.redeemed_by %}
-          <td class="badge used">Utilisé le {{ item.redeemed_at }}</td>
-          <td>{{ item.redeemer_email }}</td>
-        {% else %}
-          <td class="badge">Disponible</td><td>—</td>
-        {% endif %}
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table></div>
-  {% else %}
-  <p class="note">Aucun code n’a encore été généré.</p>
-  {% endif %}
+  <!-- Historique des virements et bouton d'annulation -->
+  <div class="card">
+    <h3 style="margin-top: 0; color: #d4af37;">📜 Suivi de vos virements</h3>
+    
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Bénéficiaire</th>
+            <th>RIB / IBAN</th>
+            <th>Montant</th>
+            <th>Statut</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if virements %}
+            {% for v in virements %}
+            <tr>
+              <td>{{ v.beneficiaire }}</td>
+              <td><code style="color: #a9b7ff;">{{ v.iban }}</code></td>
+              <td>{{ "%.2f"|format(v.montant|float) }} EUR</td>
+              <td>
+                {% if v.statut == 'en_cours' %}
+                  <span class="badge-warning">⏳ En cours</span>
+                {% else %}
+                  <span class="badge-secondary">❌ Annulé</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if v.statut == 'en_cours' %}
+                  <!-- Formulaire d'annulation directe par le client -->
+                  <form action="{{ url_for('annuler_virement', id=v.id) }}" method="POST" style="display:inline; margin:0;">
+                    <button type="submit" class="btn-danger-outline" onclick="return confirm('Voulez-vous vraiment annuler ce virement ? Les fonds seront immédiatement recrédités sur votre solde.');">
+                      Annuler
+                    </button>
+                  </form>
+                {% else %}
+                  <span style="color: #6c757d; font-size: 0.9rem;">Terminé / Remboursé</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="5" style="text-align: center; color: #bbc4da; padding: 20px;">Aucun virement enregistré pour le moment.</td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
 </main>
-<footer style="margin:24px auto 12px;text-align:center;color:#bbc4da;font-size:12px">© 2008 WealthSimpleBank — Tous droits réservés.</footer>
-<script>
-  const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
-  const form = document.getElementById('create-form');
-  const button = document.getElementById('create-button');
-  const message = document.getElementById('message');
-  const codeElement = document.getElementById('generated-code');
-  const copyButton = document.getElementById('copy-button');
-  let currentCode = '';
 
-  form.addEventListener('submit', async event => {
-    event.preventDefault();
-    button.disabled = true;
-    message.className = 'message';
-    message.textContent = '';
-    codeElement.textContent = '';
-    copyButton.hidden = true;
-    currentCode = '';
-    try {
-      const response = await fetch('/api/admin/demo-investment-codes', {
-        method:'POST',
-        headers:{'Content-Type':'application/json','X-CSRF-Token':csrfToken},
-        body:JSON.stringify({credits:document.getElementById('credits').value})
-      });
-      const result = await response.json();
-      if (!response.ok || !result.success) throw new Error(result.message || 'Création impossible.');
-      currentCode = result.code;
-      codeElement.textContent = currentCode;
-      message.textContent = `${result.credits.toLocaleString('fr-FR')} EUR. Copiez ce code maintenant ; il ne sera plus affiché.`;
-      copyButton.hidden = false;
-    } catch (error) {
-      message.className = 'message error';
-      message.textContent = error.message;
-    } finally {
-      button.disabled = false;
-    }
-  });
-
-  copyButton.addEventListener('click', async () => {
-    if (!currentCode) return;
-    try {
-      await navigator.clipboard.writeText(currentCode);
-      message.textContent = 'Code copié.';
-    } catch (error) {
-      message.className = 'message error';
-      message.textContent = 'Copie automatique impossible : sélectionne le code et copie-le manuellement.';
-    }
-  });
-</script>
+<footer style="margin:24px auto 12px;text-align:center;color:#bbc4da;font-size:12px">
+  ©️ 2026 WealthSimpleBank / NeaSimple — Tous droits réservés.
+</footer>
 </body>
 </html>
