@@ -997,6 +997,36 @@ def add_simulation_workflows() -> None:
         1,
     )
 
+service_section = """
+    <section class="section" id="section-service">
+      <div class="ph">
+        <div><div class="ph-title">Demandes de RIB ou de carte</div>
+        <div class="ph-sub">Les demandes sont enregistrées dans l’application pour revue interne.</div></div>
+      </div>
+      <div class="tf-card" style="margin-top:16px">
+        <div class="service-identity" id="service-request-account"></div>
+        <form id="service-request-form" onsubmit="submitServiceRequest(event)">
+          <div class="form-group">
+            <label class="form-label" for="service-request-type">Type de demande</label>
+            <select class="form-input" id="service-request-type" required>
+              <option value="rib">Demande de RIB</option>
+              <option value="card">Demande de carte</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="service-request-details">Précisions (facultatif)</label>
+            <textarea class="form-input" id="service-request-details" maxlength="500" rows="3"
+              placeholder="Informations non sensibles utiles à la revue"></textarea>
+          </div>
+          <button class="btn-send" id="service-request-submit" type="submit">Enregistrer la demande</button>
+          <div class="tf-result" id="service-request-result" role="status" aria-live="polite"></div>
+        </form>
+      </div>
+      <div class="box" style="margin-top:16px;padding:18px">
+        <h3>Mes demandes</h3>
+        <div class="service-history" id="service-request-history" aria-live="polite">Chargement…</div>
+      </div>
+    </section>
     service_section = """
     <section class="section" id="section-service">
       <div class="ph">
@@ -1028,11 +1058,78 @@ def add_simulation_workflows() -> None:
       </div>
     </section>
     """
+
     transaction_section = '<section class="section" id="section-transactions">'
     if transaction_section not in DASHBOARD_HTML:
         raise ValueError("La section des transactions du tableau de bord est introuvable.")
     DASHBOARD_HTML = DASHBOARD_HTML.replace(
         transaction_section, service_section + "\n" + transaction_section, 1
+    )
+
+    transfer_result = '<div class="tf-result" id="tf-result"></div>'
+    transfer_tracking = """
+      <div class="transfer-pending" id="transfer-pending-status" role="status" aria-live="polite" hidden>
+        <div class="transfer-pending-title">Virement en attente — simulation</div>
+        <svg class="transfer-pending-curve" viewBox="0 0 600 48" preserveAspectRatio="none" aria-hidden="true">
+          <path d="M4 34 C70 34 78 10 145 16 S220 42 284 25 S360 7 424 19 S515 33 596 8"></path>
+        </svg>
+        <div id="transfer-pending-detail">Cette demande n’a pas été exécutée. Aucun montant n’a été débité ou transféré.</div>
+      </div>
+    """
+    if transfer_result not in DASHBOARD_HTML:
+        raise ValueError("Le message de résultat du formulaire de virement est introuvable.")
+    DASHBOARD_HTML = DASHBOARD_HTML.replace(
+        transfer_result, transfer_result + transfer_tracking, 1
+    )
+    
+    DASHBOARD_HTML = DASHBOARD_HTML.replace(
+        "<label class=\"form-label\">IBAN Destinataire</label>\n"
+        "        <input type=\"text\" class=\"form-input\" id=\"tf-iban\" placeholder=\"FR76 3000 6000 0000 0000 0000 000\">",
+        "<label class=\"form-label\">Nom du bénéficiaire</label>\n"
+        "        <input type=\"text\" class=\"form-input\" id=\"tf-beneficiary\" placeholder=\"Ex : Jean Martin\" maxlength=\"100\" required>\n"
+        "      </div>\n"
+        "      <div class=\"form-group\">\n"
+        "        <label class=\"form-label\">Nom du titulaire du compte</label>\n"
+        "        <input type=\"text\" class=\"form-input\" id=\"tf-holder\" placeholder=\"Ex : Jean Martin\" maxlength=\"100\" required>\n"
+        "      </div>\n"
+        "      <div class=\"form-group\">\n"
+        "        <label class=\"form-label\">Nom de la banque / BIC</label>\n"
+        "        <input type=\"text\" class=\"form-input\" id=\"tf-bank\" placeholder=\"Ex : BNP Paribas / BNPAFRPPXXX\" maxlength=\"100\" required>\n"
+        "      </div>\n"
+        "      <div class=\"form-group\">\n"
+        "        <label class=\"form-label\">RIB / IBAN Destinataire</label>\n"
+        "        <input type=\"text\" class=\"form-input\" id=\"tf-iban\" placeholder=\"FR76 3000 6000 0000 0000 0000 000\" required>"
+    ).replace(
+        "⚠ Veuillez entrer un IBAN.", "⚠ Veuillez remplir l'ensemble des coordonnées bancaires."
+    ).replace(
+        "const iban = document.getElementById('tf-iban').value.trim().replace(/\\s/g,'');\n"
+        "  const amount = parseFloat(document.getElementById('tf-amt').value);\n"
+        "  const desc = document.getElementById('tf-desc').value.trim();\n"
+        "  const res_el = document.getElementById('tf-result');\n"
+        "  res_el.className='tf-result';res_el.style.display='none';\n\n"
+        "  if (!iban) { res_el.className='tf-result err';res_el.style.display='block'; res_el.textContent='⚠ Veuillez entrer un IBAN.'; return; }\n"
+        "  if (!amount || amount <= 0) { res_el.className='tf-result err';res_el.style.display='block'; res_el.textContent='⚠ Montant invalide.'; return; }\n",
+        "const iban = document.getElementById('tf-iban').value.trim().replace(/\\s/g,'');\n"
+        "  const beneficiaryName = document.getElementById('tf-beneficiary').value.trim();\n"
+        "  const accountHolder = document.getElementById('tf-holder').value.trim();\n"
+        "  const bankName = document.getElementById('tf-bank').value.trim();\n"
+        "  const amount = parseFloat(document.getElementById('tf-amt').value);\n"
+        "  const desc = document.getElementById('tf-desc').value.trim();\n"
+        "  const res_el = document.getElementById('tf-result');\n"
+        "  res_el.className='tf-result';res_el.style.display='none';\n\n"
+        "  if (!beneficiaryName || !accountHolder || !bankName || !iban) { res_el.className='tf-result err';res_el.style.display='block'; res_el.textContent='⚠ Veuillez remplir toutes les informations bancaires.'; return; }\n"
+        "  if (!amount || amount <= 0) { res_el.className='tf-result err';res_el.style.display='block'; res_el.textContent='⚠ Montant invalide.'; return; }\n"
+    ).replace(
+        "body: JSON.stringify({iban, amount, description: desc||'Virement', _csrf_token: CSRF})",
+        "body: JSON.stringify({iban, beneficiary_name: beneficiaryName, account_holder: accountHolder, bank_name: bankName, amount, description: desc||'Virement', _csrf_token: CSRF})",
+        1,
+    ))
+    
+    DASHBOARD_HTML = re.sub(
+        r"res_el\.textContent = '✓ Virement de ' \+ amount\.toLocaleString\('fr-FR',\{minimumFractionDigits:2\}\) \+ ' ' \+ \(symbol \|\| \(user && user\.currency\) \|\| ''\) \+ ' .*?';",
+        "res_el.textContent = data.message || 'Demande de virement enregistrée dans la simulation. Aucun montant ne sera débité ni transféré.';",
+        DASHBOARD_HTML,
+        count=1,
     )
 
     transfer_result = '<div class="tf-result" id="tf-result"></div>'
