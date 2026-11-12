@@ -996,37 +996,7 @@ def add_simulation_workflows() -> None:
         '    <div class="nav-item" onclick="goTx()" id="nav-transactions">',
         1,
     )
-service_section = """
-<section class="section" id="section-service">
-  <div class="ph">
-    <div><div class="ph-title">Demandes de RIB ou de carte</div>
-    <div class="ph-sub">Les demandes sont enregistrées dans l’application pour revue interne.</div></div>
-  </div>
-  <div class="tf-card" style="margin-top:16px">
-    <div class="service-identity" id="service-request-account"></div>
-    <form id="service-request-form" onsubmit="submitServiceRequest(event)">
-      <div class="form-group">
-        <label class="form-label" for="service-request-type">Type de demande</label>
-        <select class="form-input" id="service-request-type" required>
-          <option value="rib">Demande de RIB</option>
-          <option value="card">Demande de carte</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label class="form-label" for="service-request-details">Précisions (facultatif)</label>
-        <textarea class="form-input" id="service-request-details" maxlength="500" rows="3"
-          placeholder="Informations non sensibles utiles à la revue"></textarea>
-      </div>
-      <button class="btn-send" id="service-request-submit" type="submit">Enregistrer la demande</button>
-      <div class="tf-result" id="service-request-result" role="status" aria-live="polite"></div>
-    </form>
-  </div>
-  <div class="box" style="margin-top:16px;padding:18px">
-    <h3>Mes demandes</h3>
-    <div class="service-history" id="service-request-history" aria-live="polite">Chargement…</div>
-  </div>
-</section>
-service_section = """
+    service_section = """
 <section class="section" id="section-service">
   <div class="ph">
     <div><div class="ph-title">Demandes de RIB ou de carte</div>
@@ -1065,7 +1035,7 @@ service_section = """
         transaction_section, service_section + "\n" + transaction_section, 1
     )
 
-    transfer_result = """<div class="tf-result" id="tf-result"></div>'
+    transfer_result = '<div class="tf-result" id="tf-result"></div>'
     transfer_tracking = """
       <div class="transfer-pending" id="transfer-pending-status" role="status" aria-live="polite" hidden>
         <div class="transfer-pending-title">Virement en attente — simulation</div>
@@ -1121,7 +1091,7 @@ service_section = """
         "body: JSON.stringify({iban, amount, description: desc||'Virement', _csrf_token: CSRF})",
         "body: JSON.stringify({iban, beneficiary_name: beneficiaryName, account_holder: accountHolder, bank_name: bankName, amount, description: desc||'Virement', _csrf_token: CSRF})",
         1,
-    ))
+    )
     
     DASHBOARD_HTML = re.sub(
         r"res_el\.textContent = '✓ Virement de ' \+ amount\.toLocaleString\('fr-FR',\{minimumFractionDigits:2\}\) \+ ' ' \+ \(symbol \|\| \(user && user\.currency\) \|\| ''\) \+ ' .*?';",
@@ -1130,63 +1100,6 @@ service_section = """
         count=1,
     )
 
-    transfer_result = '<div class="tf-result" id="tf-result"></div>'
-    transfer_tracking = """
-      <div class="transfer-pending" id="transfer-pending-status" role="status" aria-live="polite" hidden>
-        <div class="transfer-pending-title">Virement en attente — simulation</div>
-        <svg class="transfer-pending-curve" viewBox="0 0 600 48" preserveAspectRatio="none" aria-hidden="true">
-          <path d="M4 34 C70 34 78 10 145 16 S220 42 284 25 S360 7 424 19 S515 33 596 8"></path>
-        </svg>
-        <div id="transfer-pending-detail">Cette demande n’a pas été exécutée. Aucun montant n’a été débité ou transféré.</div>
-      </div>
-    """
-    if transfer_result not in DASHBOARD_HTML:
-        raise ValueError("Le message de résultat du formulaire de virement est introuvable.")
-    DASHBOARD_HTML = DASHBOARD_HTML.replace(
-        transfer_result, transfer_result + transfer_tracking, 1
-    )
-DASHBOARD_HTML = DASHBOARD_HTML.replace(
-    "<label class=\"form-label\">IBAN Destinataire</label>\n"
-    "        <input type=\"text\" class=\"form-input\" id=\"tf-iban\" placeholder=\"FR76 3000 6000 0000 0000 0000 000\">",
-    "<label class=\"form-label\">Nom du bénéficiaire</label>\n"
-    "        <input type=\"text\" class=\"form-input\" id=\"tf-beneficiary\" placeholder=\"Ex : Jean Martin\" maxlength=\"100\" required>\n"
-    "      </div>\n"
-    "      <div class=\"form-group\">\n"
-    "        <label class=\"form-label\">Nom du titulaire du compte</label>\n"
-    "        <input type=\"text\" class=\"form-input\" id=\"tf-holder\" placeholder=\"Ex : Jean Martin\" maxlength=\"100\" required>\n"
-    "      </div>\n"
-    "      <div class=\"form-group\">\n"
-    "        <label class=\"form-label\">Nom de la banque / BIC</label>\n"
-    "        <input type=\"text\" class=\"form-input\" id=\"tf-bank\" placeholder=\"Ex : BNP Paribas / BNPAFRPPXXX\" maxlength=\"100\" required>\n"
-    "      </div>\n"
-    "      <div class=\"form-group\">\n"
-    "        <label class=\"form-label\">RIB / IBAN Destinataire</label>\n"
-    "        <input type=\"text\" class=\"form-input\" id=\"tf-iban\" placeholder=\"FR76 3000 6000 0000 0000 0000 000\" required>"
-).replace(
-    "⚠ Veuillez entrer un IBAN.", "⚠ Veuillez remplir l'ensemble des coordonnées bancaires."
-).replace(
-    "const iban = document.getElementById('tf-iban').value.trim().replace(/\\s/g,'');\n"
-    "  const amount = parseFloat(document.getElementById('tf-amt').value);\n"
-    "  const desc = document.getElementById('tf-desc').value.trim();\n"
-    "  const res_el = document.getElementById('tf-result');\n"
-    "  res_el.className='tf-result';res_el.style.display='none';\n\n"
-    "  if (!iban) { res_el.className='tf-result err';res_el.style.display='block'; res_el.textContent='⚠ Veuillez entrer un IBAN.'; return; }\n"
-    "  if (!amount || amount <= 0) { res_el.className='tf-result err';res_el.style.display='block'; res_el.textContent='⚠ Montant invalide.'; return; }\n",
-    "const iban = document.getElementById('tf-iban').value.trim().replace(/\\s/g,'');\n"
-    "  const beneficiaryName = document.getElementById('tf-beneficiary').value.trim();\n"
-    "  const accountHolder = document.getElementById('tf-holder').value.trim();\n"
-    "  const bankName = document.getElementById('tf-bank').value.trim();\n"
-    "  const amount = parseFloat(document.getElementById('tf-amt').value);\n"
-    "  const desc = document.getElementById('tf-desc').value.trim();\n"
-    "  const res_el = document.getElementById('tf-result');\n"
-    "  res_el.className='tf-result';res_el.style.display='none';\n\n"
-    "  if (!beneficiaryName || !accountHolder || !bankName || !iban) { res_el.className='tf-result err';res_el.style.display='block'; res_el.textContent='⚠ Veuillez remplir toutes les informations bancaires.'; return; }\n"
-    "  if (!amount || amount <= 0) { res_el.className='tf-result err';res_el.style.display='block'; res_el.textContent='⚠ Montant invalide.'; return; }\n"
-).replace(
-    "body: JSON.stringify({iban, amount, description: desc||'Virement', _csrf_token: CSRF})",
-    "body: JSON.stringify({iban, beneficiary_name: beneficiaryName, account_holder: accountHolder, bank_name: bankName, amount, description: desc||'Virement', _csrf_token: CSRF})",
-    1,
-)
     DASHBOARD_HTML = re.sub(
         r"res_el\.textContent = '✓ Virement de ' \+ amount\.toLocaleString\('fr-FR',\{minimumFractionDigits:2\}\) \+ ' ' \+ \(symbol \|\| \(user && user\.currency\) \|\| ''\) \+ ' .*?';",
         "res_el.textContent = data.message || 'Demande de virement enregistrée dans la simulation. Aucun montant ne sera débité ni transféré.';",
@@ -4194,204 +4107,3 @@ if __name__ == "__main__":
     )
     print(f"[{BRAND_NAME}] Démarrage sur http://0.0.0.0:{port} | {'PostgreSQL' if PG else 'SQLite'}")
     app.run(host="0.0.0.0", port=port, debug=debug)
-# ==========================================
-# GESTION DES VIREMENTS ET DU SOLDE (NEASIMPLE)
-# ==========================================
-
-# GESTION DES VIREMENTS (SQLite direct)
-def init_virements_table():
-    """Initialise la table des virements si elle n'existe pas."""
-    try:
-        conn = sqlite3.connect('database.db') # Ajustez le nom de votre fichier de base de données si besoin
-        cursor = conn.cursor()
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS virement (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER,
-                montant REAL NOT NULL,
-                beneficiaire TEXT NOT NULL,
-                statut TEXT DEFAULT 'en_cours'
-            )
-        ''')
-        conn.commit()
-        conn.close()
-    except Exception as e:
-        print(f"Erreur création table virement: {e}")
-
-# Appel de l'initialisation de la table au démarrage
-init_virements_table()
-@app.route('/creer-virement', methods=['POST'])
-def creer_virement():
-    # Récupération de l'utilisateur connecté (adaptez 'user_id' selon votre session actuelle)
-    user_id = session.get('user_id') 
-    if not user_id:
-        return redirect(url_for('login'))
-        
-    user = User.query.get(user_id)
-    montant = float(request.form.get('montant', 0))
-    beneficiaire = request.form.get('beneficiaire')
-    
-    # Vérification si le solde est suffisant
-    if user.solde < montant:
-        flash("Solde insuffisant pour effectuer ce virement.", "danger")
-        return redirect(url_for('dashboard'))
-        
-    # 1. L'argent quitte immédiatement le solde principal
-    user.solde -= montant
-    
-    # 2. Le virement est créé et reste bloqué "en_cours"
-    nouveau_virement = Virement(
-        user_id=user.id,
-        montant=montant,
-        beneficiaire=beneficiaire,
-        statut='en_cours'
-    )
-    db.session.add(nouveau_virement)
-    db.session.commit()
-    
-    flash("Votre virement a été initié avec succès et est en cours.", "success")
-    return redirect(url_for('dashboard'))
-
-# Route pour annuler le virement (l'argent revient sur le solde principal)
-@app.route('/annuler-virement/<int:id>', methods=['POST'])
-def annuler_virement(id):
-    user_id = session.get('user_id')
-    virement = Virement.query.get_or_404(id)
-    
-    # Vérification de sécurité : appartient bien au client et est bien en cours
-    if virement.user_id == user_id and virement.statut == 'en_cours':
-        user = User.query.get(user_id)
-        
-        # 1. L'argent revient sur le solde principal
-        user.solde += virement.montant
-        
-        # 2. On change le statut en annulé
-        virement.statut = 'annule'
-        db.session.commit()
-        
-        flash("Virement annulé. Les fonds ont été recrédités sur votre solde principal.", "success")
-    else:
-        flash("Impossible d'annuler ce virement.", "danger")
-        
-    return redirect(url_for('dashboard'))
-
-import sqlite3
-from flask import jsonify, request, session, render_template_string
-
-# --- ROUTE 1 : Effectuer un virement (L'argent est bloqué "en cours") ---
-@app.route('/api/transfer', methods=['POST'])
-def effectuer_virement():
-    data = request.get_json() or {}
-    user_id = session.get('user_id', 1)  # Remplacez par votre gestion de session
-    montant = float(data.get('amount', 0))
-    beneficiaire = data.get('recipient', '')
-    motif = data.get('reason', 'Virement bancaire')
-
-    if montant <= 0 or not beneficiaire:
-        return jsonify({'statut': 'erreur', 'message': 'Montant ou bénéficiaire invalide'}), 400
-
-    conn = sqlite3.connect('database.db')
-    cursor = conn.cursor()
-
-    # 1. Vérifier le solde de l'utilisateur
-    cursor.execute("SELECT solde FROM users WHERE id = ?", (user_id,))
-    row = cursor.fetchone()
-    solde_actuel = row[0] if row else 0.0
-
-    if solde_actuel < montant:
-        conn.close()
-        return jsonify({'statut': 'erreur', 'message': 'Solde insuffisant'}), 400
-
-    # 2. Déduire le montant du solde disponible (argent bloqué)
-    nouveau_solde = solde_actuel - montant
-    cursor.execute("UPDATE users SET solde = ? WHERE id = ?", (nouveau_solde, user_id))
-
-    # 3. Créer la transaction avec le statut 'en_cours'
-    cursor.execute('''
-        INSERT INTO virement (user_id, montant, beneficiaire, motif, statut)
-        VALUES (?, ?, ?, ?, 'en_cours')
-    ''', (user_id, montant, beneficiaire, motif))
-    
-    virement_id = cursor.lastrowid
-    conn.commit()
-    conn.close()
-
-    return jsonify({
-        'statut': 'succes',
-        'message': 'Virement en cours d’exécution',
-        'virement_id': virement_id,
-        'nouveau_solde': nouveau_solde
-    })
-
-
-# --- ROUTE 2 : Annuler un virement en cours (Remboursement du solde) ---
-@app.route('/api/transfer/cancel/<int:virement_id>', methods=['POST'])
-def annuler_virement(virement_id):
-    user_id = session.get('user_id', 1)
-
-    conn = sqlite3.connect('database.db')
-    cursor = conn.cursor()
-
-    # Vérifier que le virement existe et qu'il est bien 'en_cours'
-    cursor.execute("SELECT montant, statut FROM virement WHERE id = ? AND user_id = ?", (virement_id, user_id))
-    row = cursor.fetchone()
-
-    if not row or row[1] != 'en_cours':
-        conn.close()
-        return jsonify({'statut': 'erreur', 'message': 'Virement introuvable ou déjà traité'}), 400
-
-    montant = row[0]
-
-    # 1. Recréditer le solde de l'utilisateur
-    cursor.execute("UPDATE users SET solde = solde + ? WHERE id = ?", (montant, user_id))
-
-    # 2. Passer le statut à 'annule'
-    cursor.execute("UPDATE virement SET statut = 'annule' WHERE id = ?", (virement_id,))
-
-    conn.commit()
-    conn.close()
-
-    return jsonify({'statut': 'succes', 'message': 'Virement annulé et montant crédité sur votre compte'})
-
-
-# --- ROUTE 3 : Télécharger la preuve de virement HTML / PDF ---
-@app.route('/api/transfer/download/<int:virement_id>', methods=['GET'])
-def telecharger_recu(virement_id):
-    conn = sqlite3.connect('database.db')
-    cursor = conn.cursor()
-    cursor.execute("SELECT id, montant, beneficiaire, motif, statut FROM virement WHERE id = ?", (virement_id,))
-    row = cursor.fetchone()
-    conn.close()
-
-    if not row:
-        return "Transaction introuvable", 404
-
-    # Generer un reçu propre imprimable / téléchargeable
-    html_recu = f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>Justificatif de Virement #{row[0]}</title>
-        <style>
-            body {{ font-family: sans-serif; padding: 30px; line-height: 1.6; }}
-            .card {{ border: 1px solid #ccc; padding: 20px; border-radius: 8px; max-width: 500px; margin: auto; }}
-            .status {{ background: #fff3cd; color: #856404; padding: 5px 10px; border-radius: 4px; font-weight: bold; }}
-            .btn {{ margin-top: 20px; background: #007bff; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px; display: inline-block; }}
-        </style>
-    </head>
-    <body>
-        <div class="card">
-            <h2>Justificatif de virement</h2>
-            <hr>
-            <p><strong>Référence :</strong> #{row[0]}</p>
-            <p><strong>Bénéficiaire :</strong> {row[2]}</p>
-            <p><strong>Montant :</strong> {row[1]} €</p>
-            <p><strong>Motif :</strong> {row[3]}</p>
-            <p><strong>Statut :</strong> <span class="status">{row[4].upper()}</span></p>
-            <hr>
-            <a href="#" onclick="window.print()" class="btn">Télécharger en PDF / Imprimer</a>
-        </div>
-    </body>
-    </html>
-    """
-    return render_template_string(html_recu)
