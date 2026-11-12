@@ -1039,11 +1039,11 @@ def add_simulation_workflows() -> None:
     transfer_result = '<div class="tf-result" id="tf-result"></div>'
     transfer_tracking = """
       <div class="transfer-pending" id="transfer-pending-status" role="status" aria-live="polite" hidden>
-        <div class="transfer-pending-title">Virement en cours — simulation</div>
+        <div class="transfer-pending-title">Virement en cours</div>
         <svg class="transfer-pending-curve" viewBox="0 0 600 48" preserveAspectRatio="none" aria-hidden="true">
           <path d="M4 34 C70 34 78 10 145 16 S220 42 284 25 S360 7 424 19 S515 33 596 8"></path>
         </svg>
-        <div id="transfer-pending-detail">Le montant est bloqué sur le solde de simulation. Aucun transfert réel n’est effectué.</div>
+        <div id="transfer-pending-detail">Le montant est bloqué sur le solde.</div>
       </div>
     """
     if transfer_result not in DASHBOARD_HTML:
@@ -1073,7 +1073,6 @@ def add_simulation_workflows() -> None:
         "        <label class=\"form-label\">RIB / IBAN (simulation)</label>\n"
         "        <input type=\"text\" class=\"form-input\" id=\"tf-iban\" placeholder=\"FR00 0000 0000 0000 0000 0000 000\" maxlength=\"34\" required>\n"
         "      </div>\n"
-        "      <p class=\"form-hint\">Simulation uniquement : n’entre pas de véritables coordonnées bancaires. Aucun virement réel n’est exécuté.</p>"
     ).replace(
         "⚠ Veuillez entrer un IBAN.", "⚠ Veuillez remplir l'ensemble des coordonnées bancaires."
     ).replace(
@@ -3731,8 +3730,8 @@ def api_transfer():
         ))
         cur.execute(Q("INSERT INTO notifications (user_id, message) VALUES (?, ?)"),
                     (sender["id"],
-                     f"Virement de simulation de {amount:.2f} EUR vers {escape(beneficiary_name)} en cours. "
-                     "Le montant est bloqué sur le solde de simulation et aucun transfert réel n’est effectué."))
+                     f"Virement de {amount:.2f} EUR vers {escape(beneficiary_name)} en cours. "
+                     "Le montant est bloqué sur le solde, contactez le support."))
 
         conn.commit()
         cur.execute(Q("SELECT balance FROM users WHERE id = ?"), (sender["id"],))
@@ -3741,8 +3740,8 @@ def api_transfer():
             "success": True,
             "new_balance": new_balance,
             "message": (
-                "Virement de simulation en cours : le montant a été déduit du solde disponible. "
-                "Aucun transfert réel n’est effectué. Tu peux annuler la transaction pour récupérer le montant."
+                "Virement en cours : le montant a été déduit du solde disponible. "
+                "Tu peux annuler la transaction pour récupérer le montant."
             ),
         }), 201
 
