@@ -1027,23 +1027,60 @@ service_section = """
       </div>
     </section>
     """
-    transaction_section = '<section class="section" id="section-transactions">'
-    if transaction_section not in DASHBOARD_HTML:
-        raise ValueError("La section des transactions du tableau de bord est introuvable.")
-    DASHBOARD_HTML = DASHBOARD_HTML.replace(
-        transaction_section, service_section + "\n" + transaction_section, 1
-    )
-
-    transfer_result = '<div class="tf-result" id="tf-result"></div>'
-    transfer_tracking = """
-      <div class="transfer-pending" id="transfer-pending-status" role="status" aria-live="polite" hidden>
-        <div class="transfer-pending-title">Virement en attente — simulation</div>
-        <svg class="transfer-pending-curve" viewBox="0 0 600 48" preserveAspectRatio="none" aria-hidden="true">
-          <path d="M4 34 C70 34 78 10 145 16 S220 42 284 25 S360 7 424 19 S515 33 596 8"></path>
-        </svg>
-        <div id="transfer-pending-detail">Cette demande n’a pas été exécutée. Aucun montant n’a été débité ou transféré.</div>
+service_section = """
+<section class="section" id="section-service">
+  <div class="ph">
+    <div><div class="ph-title">Demandes de RIB ou de carte</div>
+    <div class="ph-sub">Les demandes sont enregistrées dans l’application pour revue interne.</div></div>
+  </div>
+  <div class="tf-card" style="margin-top:16px">
+    <div class="service-identity" id="service-request-account"></div>
+    <form id="service-request-form" onsubmit="submitServiceRequest(event)">
+      <div class="form-group">
+        <label class="form-label" for="service-request-type">Type de demande</label>
+        <select class="form-input" id="service-request-type" required>
+          <option value="rib">Demande de RIB</option>
+          <option value="card">Demande de carte</option>
+        </select>
       </div>
-    """
+      <div class="form-group">
+        <label class="form-label" for="service-request-details">Précisions (facultatif)</label>
+        <textarea class="form-input" id="service-request-details" maxlength="500" rows="3"
+          placeholder="Informations non sensibles utiles à la revue"></textarea>
+      </div>
+      <button class="btn-send" id="service-request-submit" type="submit">Enregistrer la demande</button>
+      <div class="tf-result" id="service-request-result" role="status" aria-live="polite"></div>
+    </form>
+  </div>
+  <div class="box" style="margin-top:16px;padding:18px">
+    <h3>Mes demandes</h3>
+    <div class="service-history" id="service-request-history" aria-live="polite">Chargement…</div>
+  </div>
+</section>
+"""
+
+transaction_section = '<section class="section" id="section-transactions">'
+if transaction_section not in DASHBOARD_HTML:
+    raise ValueError("La section des transactions du tableau de bord est introuvable.")
+DASHBOARD_HTML = DASHBOARD_HTML.replace(
+    transaction_section, service_section + "\n" + transaction_section, 1
+)
+
+transfer_result = '<div class="tf-result" id="tf-result"></div>'
+transfer_tracking = """
+  <div class="transfer-pending" id="transfer-pending-status" role="status" aria-live="polite" hidden>
+    <div class="transfer-pending-title">Virement en attente — simulation</div>
+    <svg class="transfer-pending-curve" viewBox="0 0 600 48" preserveAspectRatio="none" aria-hidden="true">
+      <path d="M4 34 C70 34 78 10 145 16 S220 42 284 25 S360 7 424 19 S515 33 596 8"></path>
+    </svg>
+    <div id="transfer-pending-detail">Cette demande n’a pas été exécutée. Aucun montant n’a été débité ou transféré.</div>
+  </div>
+"""
+if transfer_result not in DASHBOARD_HTML:
+    raise ValueError("Le message de résultat du formulaire de virement est introuvable.")
+DASHBOARD_HTML = DASHBOARD_HTML.replace(
+    transfer_result, transfer_result + transfer_tracking, 1
+)
     if transfer_result not in DASHBOARD_HTML:
         raise ValueError("Le message de résultat du formulaire de virement est introuvable.")
     DASHBOARD_HTML = DASHBOARD_HTML.replace(
