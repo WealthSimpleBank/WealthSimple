@@ -1145,7 +1145,7 @@ def add_simulation_workflows() -> None:
         detail.textContent = 'Demande de ' +
           parseFloat(pending.amount).toLocaleString('fr-FR', {minimumFractionDigits:2}) +
           ' ' + (symbol || '') +
-          ' bloquée sur le solde de simulation. Aucun transfert réel n’est effectué. Annule la transaction depuis l’historique pour récupérer le montant.';
+          ' bloquée sur le solde. Annule la transaction depuis l’historique pour récupérer le montant.';
       }
     }
     
