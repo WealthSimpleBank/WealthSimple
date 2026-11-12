@@ -1210,7 +1210,7 @@ DASHBOARD_HTML = DASHBOARD_HTML.replace(
           ' enregistrée dans la simulation. Aucun montant ne sera débité ni transféré.';
       }
     }
-
+    
     async function loadServiceRequests() {
       const list = document.getElementById('service-request-history');
       const account = document.getElementById('service-request-account');
