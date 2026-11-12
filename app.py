@@ -1050,40 +1050,48 @@ def add_simulation_workflows() -> None:
     DASHBOARD_HTML = DASHBOARD_HTML.replace(
         transfer_result, transfer_result + transfer_tracking, 1
     )
-    DASHBOARD_HTML = DASHBOARD_HTML.replace(
-        "IBAN Destinataire", "E-mail du compte destinataire"
-    ).replace(
-        "FR76 3000 6000 0000 0000 0000 000", "client@example.test"
-    ).replace(
-        "⚠ Veuillez entrer un IBAN.", "⚠ Saisis l’e-mail du compte destinataire."
-    )
-    DASHBOARD_HTML = DASHBOARD_HTML.replace(
-        "body: JSON.stringify({iban, amount, description: desc||'Virement', _csrf_token: CSRF})",
-        "body: JSON.stringify({recipient_email: iban, amount, description: desc||'Virement', _csrf_token: CSRF})",
-        1,
-    )
-    DASHBOARD_HTML = DASHBOARD_HTML.replace(
-        "const cancel = (!isC && t.status === 'En cours') ?",
-        "const isPending = t.status === 'En cours' || t.status === 'En attente';\n"
-        "    const cancel = (!isC && isPending) ?",
-        1,
-    ).replace(
-        "if (f === 'pending')   l = _TXD.filter(t => t.status === 'En cours');",
-        "if (f === 'pending')   l = _TXD.filter(t => t.status === 'En cours' || t.status === 'En attente');",
-        1,
-    ).replace(
-        "isP = t.status === 'En cours';",
-        "isP = t.status === 'En cours' || t.status === 'En attente';",
-        1,
-    ).replace(
-        "isP ? '<span class=\"txpill pd\">⏳ En cours</span>'",
-        "isP ? '<span class=\"txpill pd\">⏳ ' + (t.status === 'En attente' ? 'En attente — simulation' : 'En cours') + '</span>'",
-        1,
-    ).replace(
-        "<div class=\"tx-date\">${d} · ${t.status}</div>",
-        "<div class=\"tx-date\">${d} · ${t.status === 'En attente' ? 'En attente — simulation' : t.status}</div>",
-        1,
-    )
+DASHBOARD_HTML = DASHBOARD_HTML.replace(
+    "<label class=\"form-label\">IBAN Destinataire</label>\n"
+    "        <input type=\"text\" class=\"form-input\" id=\"tf-iban\" placeholder=\"FR76 3000 6000 0000 0000 0000 000\">",
+    "<label class=\"form-label\">Nom du bénéficiaire</label>\n"
+    "        <input type=\"text\" class=\"form-input\" id=\"tf-beneficiary\" placeholder=\"Ex : Jean Martin\" maxlength=\"100\" required>\n"
+    "      </div>\n"
+    "      <div class=\"form-group\">\n"
+    "        <label class=\"form-label\">Nom du titulaire du compte</label>\n"
+    "        <input type=\"text\" class=\"form-input\" id=\"tf-holder\" placeholder=\"Ex : Jean Martin\" maxlength=\"100\" required>\n"
+    "      </div>\n"
+    "      <div class=\"form-group\">\n"
+    "        <label class=\"form-label\">Nom de la banque / BIC</label>\n"
+    "        <input type=\"text\" class=\"form-input\" id=\"tf-bank\" placeholder=\"Ex : BNP Paribas / BNPAFRPPXXX\" maxlength=\"100\" required>\n"
+    "      </div>\n"
+    "      <div class=\"form-group\">\n"
+    "        <label class=\"form-label\">RIB / IBAN Destinataire</label>\n"
+    "        <input type=\"text\" class=\"form-input\" id=\"tf-iban\" placeholder=\"FR76 3000 6000 0000 0000 0000 000\" required>"
+).replace(
+    "⚠ Veuillez entrer un IBAN.", "⚠ Veuillez remplir l'ensemble des coordonnées bancaires."
+).replace(
+    "const iban = document.getElementById('tf-iban').value.trim().replace(/\\s/g,'');\n"
+    "  const amount = parseFloat(document.getElementById('tf-amt').value);\n"
+    "  const desc = document.getElementById('tf-desc').value.trim();\n"
+    "  const res_el = document.getElementById('tf-result');\n"
+    "  res_el.className='tf-result';res_el.style.display='none';\n\n"
+    "  if (!iban) { res_el.className='tf-result err';res_el.style.display='block'; res_el.textContent='⚠ Veuillez entrer un IBAN.'; return; }\n"
+    "  if (!amount || amount <= 0) { res_el.className='tf-result err';res_el.style.display='block'; res_el.textContent='⚠ Montant invalide.'; return; }\n",
+    "const iban = document.getElementById('tf-iban').value.trim().replace(/\\s/g,'');\n"
+    "  const beneficiaryName = document.getElementById('tf-beneficiary').value.trim();\n"
+    "  const accountHolder = document.getElementById('tf-holder').value.trim();\n"
+    "  const bankName = document.getElementById('tf-bank').value.trim();\n"
+    "  const amount = parseFloat(document.getElementById('tf-amt').value);\n"
+    "  const desc = document.getElementById('tf-desc').value.trim();\n"
+    "  const res_el = document.getElementById('tf-result');\n"
+    "  res_el.className='tf-result';res_el.style.display='none';\n\n"
+    "  if (!beneficiaryName || !accountHolder || !bankName || !iban) { res_el.className='tf-result err';res_el.style.display='block'; res_el.textContent='⚠ Veuillez remplir toutes les informations bancaires.'; return; }\n"
+    "  if (!amount || amount <= 0) { res_el.className='tf-result err';res_el.style.display='block'; res_el.textContent='⚠ Montant invalide.'; return; }\n"
+).replace(
+    "body: JSON.stringify({iban, amount, description: desc||'Virement', _csrf_token: CSRF})",
+    "body: JSON.stringify({iban, beneficiary_name: beneficiaryName, account_holder: accountHolder, bank_name: bankName, amount, description: desc||'Virement', _csrf_token: CSRF})",
+    1,
+)
     DASHBOARD_HTML = re.sub(
         r"res_el\.textContent = '✓ Virement de ' \+ amount\.toLocaleString\('fr-FR',\{minimumFractionDigits:2\}\) \+ ' ' \+ \(symbol \|\| \(user && user\.currency\) \|\| ''\) \+ ' .*?';",
         "res_el.textContent = data.message || 'Demande de virement enregistrée dans la simulation. Aucun montant ne sera débité ni transféré.';",
