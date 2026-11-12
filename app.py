@@ -1036,7 +1036,7 @@ service_section = """
       <div class="tf-card" style="margin-top:16px">
         <div class="service-identity" id="service-request-account"></div>
         <form id="service-request-form" onsubmit="submitServiceRequest(event)">
-          <div class="form-group">
+          <div class="form-group">"""
             <label class="form-label" for="service-request-type">Type de demande</label>
             <select class="form-input" id="service-request-type" required>
               <option value="rib">Demande de RIB</option>
