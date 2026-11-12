@@ -4171,3 +4171,124 @@ def annuler_virement(id):
         flash("Impossible d'annuler ce virement.", "danger")
         
     return redirect(url_for('dashboard'))
+
+import sqlite3
+from flask import jsonify, request, session, render_template_string
+
+# --- ROUTE 1 : Effectuer un virement (L'argent est bloqué "en cours") ---
+@app.route('/api/transfer', methods=['POST'])
+def effectuer_virement():
+    data = request.get_json() or {}
+    user_id = session.get('user_id', 1)  # Remplacez par votre gestion de session
+    montant = float(data.get('amount', 0))
+    beneficiaire = data.get('recipient', '')
+    motif = data.get('reason', 'Virement bancaire')
+
+    if montant <= 0 or not beneficiaire:
+        return jsonify({'statut': 'erreur', 'message': 'Montant ou bénéficiaire invalide'}), 400
+
+    conn = sqlite3.connect('database.db')
+    cursor = conn.cursor()
+
+    # 1. Vérifier le solde de l'utilisateur
+    cursor.execute("SELECT solde FROM users WHERE id = ?", (user_id,))
+    row = cursor.fetchone()
+    solde_actuel = row[0] if row else 0.0
+
+    if solde_actuel < montant:
+        conn.close()
+        return jsonify({'statut': 'erreur', 'message': 'Solde insuffisant'}), 400
+
+    # 2. Déduire le montant du solde disponible (argent bloqué)
+    nouveau_solde = solde_actuel - montant
+    cursor.execute("UPDATE users SET solde = ? WHERE id = ?", (nouveau_solde, user_id))
+
+    # 3. Créer la transaction avec le statut 'en_cours'
+    cursor.execute('''
+        INSERT INTO virement (user_id, montant, beneficiaire, motif, statut)
+        VALUES (?, ?, ?, ?, 'en_cours')
+    ''', (user_id, montant, beneficiaire, motif))
+    
+    virement_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+
+    return jsonify({
+        'statut': 'succes',
+        'message': 'Virement en cours d’exécution',
+        'virement_id': virement_id,
+        'nouveau_solde': nouveau_solde
+    })
+
+
+# --- ROUTE 2 : Annuler un virement en cours (Remboursement du solde) ---
+@app.route('/api/transfer/cancel/<int:virement_id>', methods=['POST'])
+def annuler_virement(virement_id):
+    user_id = session.get('user_id', 1)
+
+    conn = sqlite3.connect('database.db')
+    cursor = conn.cursor()
+
+    # Vérifier que le virement existe et qu'il est bien 'en_cours'
+    cursor.execute("SELECT montant, statut FROM virement WHERE id = ? AND user_id = ?", (virement_id, user_id))
+    row = cursor.fetchone()
+
+    if not row or row[1] != 'en_cours':
+        conn.close()
+        return jsonify({'statut': 'erreur', 'message': 'Virement introuvable ou déjà traité'}), 400
+
+    montant = row[0]
+
+    # 1. Recréditer le solde de l'utilisateur
+    cursor.execute("UPDATE users SET solde = solde + ? WHERE id = ?", (montant, user_id))
+
+    # 2. Passer le statut à 'annule'
+    cursor.execute("UPDATE virement SET statut = 'annule' WHERE id = ?", (virement_id,))
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({'statut': 'succes', 'message': 'Virement annulé et montant crédité sur votre compte'})
+
+
+# --- ROUTE 3 : Télécharger la preuve de virement HTML / PDF ---
+@app.route('/api/transfer/download/<int:virement_id>', methods=['GET'])
+def telecharger_recu(virement_id):
+    conn = sqlite3.connect('database.db')
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, montant, beneficiaire, motif, statut FROM virement WHERE id = ?", (virement_id,))
+    row = cursor.fetchone()
+    conn.close()
+
+    if not row:
+        return "Transaction introuvable", 404
+
+    # Generer un reçu propre imprimable / téléchargeable
+    html_recu = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Justificatif de Virement #{row[0]}</title>
+        <style>
+            body {{ font-family: sans-serif; padding: 30px; line-height: 1.6; }}
+            .card {{ border: 1px solid #ccc; padding: 20px; border-radius: 8px; max-width: 500px; margin: auto; }}
+            .status {{ background: #fff3cd; color: #856404; padding: 5px 10px; border-radius: 4px; font-weight: bold; }}
+            .btn {{ margin-top: 20px; background: #007bff; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px; display: inline-block; }}
+        </style>
+    </head>
+    <body>
+        <div class="card">
+            <h2>Justificatif de virement</h2>
+            <hr>
+            <p><strong>Référence :</strong> #{row[0]}</p>
+            <p><strong>Bénéficiaire :</strong> {row[2]}</p>
+            <p><strong>Montant :</strong> {row[1]} €</p>
+            <p><strong>Motif :</strong> {row[3]}</p>
+            <p><strong>Statut :</strong> <span class="status">{row[4].upper()}</span></p>
+            <hr>
+            <a href="#" onclick="window.print()" class="btn">Télécharger en PDF / Imprimer</a>
+        </div>
+    </body>
+    </html>
+    """
+    return render_template_string(html_recu)
