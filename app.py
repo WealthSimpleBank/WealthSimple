@@ -996,7 +996,6 @@ def add_simulation_workflows() -> None:
         '    <div class="nav-item" onclick="goTx()" id="nav-transactions">',
         1,
     )
-
 service_section = """
     <section class="section" id="section-service">
       <div class="ph">
@@ -1027,38 +1026,7 @@ service_section = """
         <div class="service-history" id="service-request-history" aria-live="polite">Chargement…</div>
       </div>
     </section>
-    service_section = """
-    <section class="section" id="section-service">
-      <div class="ph">
-        <div><div class="ph-title">Demandes de RIB ou de carte</div>
-        <div class="ph-sub">Les demandes sont enregistrées dans l’application pour revue interne.</div></div>
-      </div>
-      <div class="tf-card" style="margin-top:16px">
-        <div class="service-identity" id="service-request-account"></div>
-        <form id="service-request-form" onsubmit="submitServiceRequest(event)">
-          <div class="form-group">"""
-            <label class="form-label" for="service-request-type">Type de demande</label>
-            <select class="form-input" id="service-request-type" required>
-              <option value="rib">Demande de RIB</option>
-              <option value="card">Demande de carte</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="service-request-details">Précisions (facultatif)</label>
-            <textarea class="form-input" id="service-request-details" maxlength="500" rows="3"
-              placeholder="Informations non sensibles utiles à la revue"></textarea>
-          </div>
-          <button class="btn-send" id="service-request-submit" type="submit">Enregistrer la demande</button>
-          <div class="tf-result" id="service-request-result" role="status" aria-live="polite"></div>
-        </form>
-      </div>
-      <div class="box" style="margin-top:16px;padding:18px">
-        <h3>Mes demandes</h3>
-        <div class="service-history" id="service-request-history" aria-live="polite">Chargement…</div>
-      </div>
-    </section>
     """
-
     transaction_section = '<section class="section" id="section-transactions">'
     if transaction_section not in DASHBOARD_HTML:
         raise ValueError("La section des transactions du tableau de bord est introuvable.")
@@ -1081,7 +1049,6 @@ service_section = """
     DASHBOARD_HTML = DASHBOARD_HTML.replace(
         transfer_result, transfer_result + transfer_tracking, 1
     )
-    
     DASHBOARD_HTML = DASHBOARD_HTML.replace(
         "<label class=\"form-label\">IBAN Destinataire</label>\n"
         "        <input type=\"text\" class=\"form-input\" id=\"tf-iban\" placeholder=\"FR76 3000 6000 0000 0000 0000 000\">",
