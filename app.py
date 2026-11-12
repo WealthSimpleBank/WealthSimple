@@ -1065,7 +1065,7 @@ service_section = """
         transaction_section, service_section + "\n" + transaction_section, 1
     )
 
-    transfer_result = '<div class="tf-result" id="tf-result"></div>'
+    transfer_result = """<div class="tf-result" id="tf-result"></div>'
     transfer_tracking = """
       <div class="transfer-pending" id="transfer-pending-status" role="status" aria-live="polite" hidden>
         <div class="transfer-pending-title">Virement en attente — simulation</div>
