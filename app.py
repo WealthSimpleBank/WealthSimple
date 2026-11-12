@@ -979,6 +979,7 @@ def add_simulation_workflows() -> None:
       .service-history{display:grid;gap:10px;margin-top:16px}
       .service-entry{padding:14px;border:1px solid var(--border);border-radius:12px;background:var(--s2)}
       .service-entry p{margin:6px 0 0;color:var(--text2);white-space:pre-wrap;overflow-wrap:anywhere}
+      .form-hint{margin:6px 0 14px;color:var(--text2);font-size:.82rem;line-height:1.5}
       .transfer-pending{margin-top:18px;padding:16px;border:1px solid rgba(245,158,11,.3);border-radius:14px;background:rgba(245,158,11,.07)}
       .transfer-pending[hidden]{display:none}
       .transfer-pending-title{font-weight:700;color:var(--text)}
@@ -1038,11 +1039,11 @@ def add_simulation_workflows() -> None:
     transfer_result = '<div class="tf-result" id="tf-result"></div>'
     transfer_tracking = """
       <div class="transfer-pending" id="transfer-pending-status" role="status" aria-live="polite" hidden>
-        <div class="transfer-pending-title">Virement en attente — simulation</div>
+        <div class="transfer-pending-title">Virement en cours — simulation</div>
         <svg class="transfer-pending-curve" viewBox="0 0 600 48" preserveAspectRatio="none" aria-hidden="true">
           <path d="M4 34 C70 34 78 10 145 16 S220 42 284 25 S360 7 424 19 S515 33 596 8"></path>
         </svg>
-        <div id="transfer-pending-detail">Cette demande n’a pas été exécutée. Aucun montant n’a été débité ou transféré.</div>
+        <div id="transfer-pending-detail">Le montant est bloqué sur le solde de simulation. Aucun transfert réel n’est effectué.</div>
       </div>
     """
     if transfer_result not in DASHBOARD_HTML:
@@ -1061,38 +1062,63 @@ def add_simulation_workflows() -> None:
         "        <input type=\"text\" class=\"form-input\" id=\"tf-holder\" placeholder=\"Ex : Jean Martin\" maxlength=\"100\" required>\n"
         "      </div>\n"
         "      <div class=\"form-group\">\n"
-        "        <label class=\"form-label\">Nom de la banque / BIC</label>\n"
-        "        <input type=\"text\" class=\"form-input\" id=\"tf-bank\" placeholder=\"Ex : BNP Paribas / BNPAFRPPXXX\" maxlength=\"100\" required>\n"
+        "        <label class=\"form-label\">Nom de la banque</label>\n"
+        "        <input type=\"text\" class=\"form-input\" id=\"tf-bank\" placeholder=\"Ex : Banque de démonstration\" maxlength=\"100\" required>\n"
         "      </div>\n"
         "      <div class=\"form-group\">\n"
-        "        <label class=\"form-label\">RIB / IBAN Destinataire</label>\n"
-        "        <input type=\"text\" class=\"form-input\" id=\"tf-iban\" placeholder=\"FR76 3000 6000 0000 0000 0000 000\" required>"
+        "        <label class=\"form-label\">BIC</label>\n"
+        "        <input type=\"text\" class=\"form-input\" id=\"tf-bic\" placeholder=\"Ex : DEMOFRPP\" maxlength=\"11\" required>\n"
+        "      </div>\n"
+        "      <div class=\"form-group\">\n"
+        "        <label class=\"form-label\">RIB / IBAN (simulation)</label>\n"
+        "        <input type=\"text\" class=\"form-input\" id=\"tf-iban\" placeholder=\"FR00 0000 0000 0000 0000 0000 000\" maxlength=\"34\" required>\n"
+        "      </div>\n"
+        "      <p class=\"form-hint\">Simulation uniquement : n’entre pas de véritables coordonnées bancaires. Aucun virement réel n’est exécuté.</p>"
     ).replace(
         "⚠ Veuillez entrer un IBAN.", "⚠ Veuillez remplir l'ensemble des coordonnées bancaires."
     ).replace(
         "const iban = document.getElementById('tf-iban').value.trim().replace(/\\s/g,'');\n"
         "  const amount = parseFloat(document.getElementById('tf-amt').value);\n"
-        "  const desc = document.getElementById('tf-desc').value.trim();\n"
-        "  const res_el = document.getElementById('tf-result');\n"
-        "  res_el.className='tf-result';res_el.style.display='none';\n\n"
-        "  if (!iban) { res_el.className='tf-result err';res_el.style.display='block'; res_el.textContent='⚠ Veuillez entrer un IBAN.'; return; }\n"
-        "  if (!amount || amount <= 0) { res_el.className='tf-result err';res_el.style.display='block'; res_el.textContent='⚠ Montant invalide.'; return; }\n",
-        "const iban = document.getElementById('tf-iban').value.trim().replace(/\\s/g,'');\n"
+        "  const desc = document.getElementById('tf-desc').value.trim();\n",
+        "const iban = document.getElementById('tf-iban').value.trim().replace(/\\s/g,'').toUpperCase();\n"
         "  const beneficiaryName = document.getElementById('tf-beneficiary').value.trim();\n"
         "  const accountHolder = document.getElementById('tf-holder').value.trim();\n"
         "  const bankName = document.getElementById('tf-bank').value.trim();\n"
+        "  const bic = document.getElementById('tf-bic').value.trim().replace(/\\s/g,'').toUpperCase();\n"
         "  const amount = parseFloat(document.getElementById('tf-amt').value);\n"
         "  const desc = document.getElementById('tf-desc').value.trim();\n"
+    ).replace(
         "  const res_el = document.getElementById('tf-result');\n"
         "  res_el.className='tf-result';res_el.style.display='none';\n\n"
-        "  if (!beneficiaryName || !accountHolder || !bankName || !iban) { res_el.className='tf-result err';res_el.style.display='block'; res_el.textContent='⚠ Veuillez remplir toutes les informations bancaires.'; return; }\n"
+        "  if (!iban) { res_el.className='tf-result err';res_el.style.display='block'; res_el.textContent='⚠ Veuillez remplir l'ensemble des coordonnées bancaires.'; return; }\n"
         "  if (!amount || amount <= 0) { res_el.className='tf-result err';res_el.style.display='block'; res_el.textContent='⚠ Montant invalide.'; return; }\n"
+        ,
+        "  const res_el = document.getElementById('tf-result');\n"
+        "  res_el.className='tf-result';res_el.style.display='none';\n\n"
+        "  if (!beneficiaryName || !accountHolder || !bankName || !bic || !iban) { res_el.className='tf-result err';res_el.style.display='block'; res_el.textContent='⚠ Remplis toutes les coordonnées du bénéficiaire.'; return; }\n"
+        "  if (!/^[A-Z]{2}[A-Z0-9]{13,32}$/.test(iban)) { res_el.className='tf-result err';res_el.style.display='block'; res_el.textContent='⚠ Format du RIB / IBAN invalide.'; return; }\n"
+        "  if (!/^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?$/.test(bic)) { res_el.className='tf-result err';res_el.style.display='block'; res_el.textContent='⚠ Format du BIC invalide.'; return; }\n"
+        "  if (!amount || amount <= 0) { res_el.className='tf-result err';res_el.style.display='block'; res_el.textContent='⚠ Montant invalide.'; return; }\n",
     ).replace(
         "body: JSON.stringify({iban, amount, description: desc||'Virement', _csrf_token: CSRF})",
-        "body: JSON.stringify({iban, beneficiary_name: beneficiaryName, account_holder: accountHolder, bank_name: bankName, amount, description: desc||'Virement', _csrf_token: CSRF})",
+        "body: JSON.stringify({iban, beneficiary_name: beneficiaryName, account_holder: accountHolder, bank_name: bankName, bic, amount, description: desc||'Virement', _csrf_token: CSRF})",
         1,
     )
-    
+
+    DASHBOARD_HTML = DASHBOARD_HTML.replace(
+        "document.getElementById('tf-iban').value = '';\n"
+        "      document.getElementById('tf-amt').value = '';\n"
+        "      document.getElementById('tf-desc').value = '';",
+        "document.getElementById('tf-iban').value = '';\n"
+        "      document.getElementById('tf-beneficiary').value = '';\n"
+        "      document.getElementById('tf-holder').value = '';\n"
+        "      document.getElementById('tf-bank').value = '';\n"
+        "      document.getElementById('tf-bic').value = '';\n"
+        "      document.getElementById('tf-amt').value = '';\n"
+        "      document.getElementById('tf-desc').value = '';",
+        1,
+    )
+
     DASHBOARD_HTML = re.sub(
         r"res_el\.textContent = '✓ Virement de ' \+ amount\.toLocaleString\('fr-FR',\{minimumFractionDigits:2\}\) \+ ' ' \+ \(symbol \|\| \(user && user\.currency\) \|\| ''\) \+ ' .*?';",
         "res_el.textContent = data.message || 'Demande de virement enregistrée dans la simulation. Aucun montant ne sera débité ni transféré.';",
@@ -1113,14 +1139,14 @@ def add_simulation_workflows() -> None:
       const detail = document.getElementById('transfer-pending-detail');
       if (!panel || !detail) return;
       const pending = (transactions || []).find(t =>
-        t.type.toUpperCase() === 'DEBIT' && t.status === 'En attente'
+        t.type.toUpperCase() === 'DEBIT' && t.status === 'En cours'
       );
       panel.hidden = !pending;
       if (pending) {
         detail.textContent = 'Demande de ' +
           parseFloat(pending.amount).toLocaleString('fr-FR', {minimumFractionDigits:2}) +
           ' ' + (symbol || '') +
-          ' enregistrée dans la simulation. Aucun montant ne sera débité ni transféré.';
+          ' bloquée sur le solde de simulation. Aucun transfert réel n’est effectué. Annule la transaction depuis l’historique pour récupérer le montant.';
       }
     }
     
@@ -3632,13 +3658,25 @@ def api_Investissement_trade():
 @login_required
 @validate_csrf
 def api_transfer():
-    data      = request.get_json(silent=True) or {}
-    recipient_email = str(data.get("recipient_email", "")).strip().lower()
-    amount    = validate_amount(data.get("amount", 0))
-    desc      = str(data.get("description", "Virement")).strip()[:200] or "Virement"
+    data = request.get_json(silent=True) or {}
+    beneficiary_name = str(data.get("beneficiary_name", "")).strip()
+    account_holder = str(data.get("account_holder", "")).strip()
+    bank_name = str(data.get("bank_name", "")).strip()
+    bic = str(data.get("bic", "")).strip().replace(" ", "").upper()
+    iban = str(data.get("iban", "")).strip().replace(" ", "").upper()
+    amount = validate_amount(data.get("amount", 0))
+    desc = escape(str(data.get("description", "Virement")).strip()[:200]) or "Virement"
 
-    if not recipient_email or len(recipient_email) > 100 or not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", recipient_email):
-        return jsonify({"success": False, "message": "Adresse e-mail de compte invalide."}), 400
+    if (
+        not beneficiary_name or len(beneficiary_name) > 100
+        or not account_holder or len(account_holder) > 100
+        or not bank_name or len(bank_name) > 100
+    ):
+        return jsonify({"success": False, "message": "Nom du bénéficiaire, titulaire ou banque invalide."}), 400
+    if not re.fullmatch(r"[A-Z]{2}[A-Z0-9]{13,32}", iban):
+        return jsonify({"success": False, "message": "Format du RIB / IBAN invalide."}), 400
+    if not re.fullmatch(r"[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?", bic):
+        return jsonify({"success": False, "message": "Format du BIC invalide."}), 400
     if amount is None:
         return jsonify({"success": False, "message": "Montant invalide."}), 400
 
@@ -3659,50 +3697,54 @@ def api_transfer():
                 "message": "Seuls les comptes clients actifs peuvent effectuer un virement.",
             }), 403
 
-        cur.execute(Q("SELECT * FROM users WHERE LOWER(email) = ?"), (recipient_email,))
-        recipient = fetchone(cur)
-        if not recipient or recipient["account_status"] != "active" or recipient["account_status"] == "admin":
-            conn.rollback()
-            return jsonify({
-                "success": False,
-                "message": "Destinataire introuvable : seuls les comptes actifs sont acceptés.",
-            }), 404
-        if recipient["id"] == sender["id"]:
-            return jsonify({"success": False, "message": "Impossible de vous virer à vous-même."}), 400
-
-        cur.execute(Q("""
-            SELECT COALESCE(SUM(amount), 0) AS total
-            FROM transactions
-            WHERE user_id = ? AND type = ? AND status = ?
-        """), (sender["id"], "DEBIT", "En attente"))
-        pending_total = float(fetchone(cur)["total"] or 0)
-        if amount + pending_total > float(sender["balance"]):
+        if amount > float(sender["balance"]):
             conn.rollback()
             return jsonify({
                 "success": False,
                 "message": "Le montant demandé dépasse le solde disponible dans cette simulation.",
             }), 400
 
+        cur.execute(Q(
+            "UPDATE users SET balance = balance - ? WHERE id = ? AND balance >= ?"
+        ), (amount, sender["id"], amount))
+        if cur.rowcount != 1:
+            conn.rollback()
+            return jsonify({
+                "success": False,
+                "message": "Le solde disponible est insuffisant.",
+            }), 400
+
+        counterpart = " · ".join((
+            escape(beneficiary_name),
+            f"titulaire : {escape(account_holder)}",
+            f"banque : {escape(bank_name)}",
+            f"BIC : {escape(bic)}",
+            f"IBAN : {escape(iban)}",
+        ))
         cur.execute(Q("""
             INSERT INTO transactions (user_id, type, amount, description, counterpart, status)
             VALUES (?, ?, ?, ?, ?, ?)
         """), (
-            sender["id"], "DEBIT", amount, desc, recipient_email, "En attente"
+            sender["id"], "DEBIT", amount,
+            desc if desc != "Virement" else f"Virement vers {escape(beneficiary_name)}",
+            counterpart, "En cours"
         ))
         cur.execute(Q("INSERT INTO notifications (user_id, message) VALUES (?, ?)"),
                     (sender["id"],
-                     f"Demande de virement de {amount:.2f} EUR enregistrée en attente. "
-                     "Aucun montant n’a été débité ni transféré pour le moment."))
+                     f"Virement de simulation de {amount:.2f} EUR vers {escape(beneficiary_name)} en cours. "
+                     "Le montant est bloqué sur le solde de simulation et aucun transfert réel n’est effectué."))
 
         conn.commit()
+        cur.execute(Q("SELECT balance FROM users WHERE id = ?"), (sender["id"],))
+        new_balance = float(fetchone(cur)["balance"])
         return jsonify({
             "success": True,
-            "new_balance": float(sender["balance"]),
+            "new_balance": new_balance,
             "message": (
-                "Demande de virement enregistrée en attente dans la simulation. "
-                "Aucun montant n’a été débité ni transféré."
+                "Virement de simulation en cours : le montant a été déduit du solde disponible. "
+                "Aucun transfert réel n’est effectué. Tu peux annuler la transaction pour récupérer le montant."
             ),
-        }), 202
+        }), 201
 
     except Exception:
         conn.rollback()
