@@ -4095,15 +4095,28 @@ if __name__ == "__main__":
 # GESTION DES VIREMENTS ET DU SOLDE (NEASIMPLE)
 # ==========================================
 
-class Virement(db.Model):
-    __tablename__ = 'virement'
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    montant = db.Column(db.Float, nullable=False)
-    beneficiaire = db.Column(db.String(100), nullable=False)
-    statut = db.Column(db.String(20), default='en_cours') # 'en_cours' ou 'annule'
+# GESTION DES VIREMENTS (SQLite direct)
+def init_virements_table():
+    """Initialise la table des virements si elle n'existe pas."""
+    try:
+        conn = sqlite3.connect('database.db') # Ajustez le nom de votre fichier de base de données si besoin
+        cursor = conn.cursor()
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS virement (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER,
+                montant REAL NOT NULL,
+                beneficiaire TEXT NOT NULL,
+                statut TEXT DEFAULT 'en_cours'
+            )
+        ''')
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"Erreur création table virement: {e}")
 
-# Route pour lancer le virement (l'argent quitte le solde)
+# Appel de l'initialisation de la table au démarrage
+init_virements_table()
 @app.route('/creer-virement', methods=['POST'])
 def creer_virement():
     # Récupération de l'utilisateur connecté (adaptez 'user_id' selon votre session actuelle)
